@@ -62,12 +62,12 @@ uIn = zeros(K, 1);
 yIn   = zeros(n, 1);
 
 par.mu = 0;
-Fin = kktSystemPlus(b, B, c, C, M, sIn, qIn, uIn, yIn, par);
+Fin = kktSystem(b, B, c, C, M, sIn, qIn, uIn, yIn, par);
 
-[yOut, uOut, qOut, sOut, info] = ipSolverPlus(b, B, c, C, M, sIn, qIn, uIn, yIn, par);
+[yOut, uOut, qOut, sOut, info] = ipSolver(b, B, c, C, M, sIn, qIn, uIn, yIn, par);
 
 par.mu = 0;
-Fout = kktSystemPlus(b, B, c, C, M, sOut, qOut, uOut, yOut, par);
+Fout = kktSystem(b, B, c, C, M, sOut, qOut, uOut, yOut, par);
 
 ok = norm(Fout) < 1e-6;
 

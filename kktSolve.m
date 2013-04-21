@@ -4,7 +4,7 @@
 % License: GNU General Public License Version 2
 % -----------------------------------------------------------------------------
 
-function [ds, dq, du, dy] = kktSolvePlus(b, B, c, C, M, s, q, u, y, params)
+function [ds, dq, du, dy] = kktSolve(b, B, c, C, M, s, q, u, y, params)
 
 pFlag = params.pFlag;
 mu = params.mu;

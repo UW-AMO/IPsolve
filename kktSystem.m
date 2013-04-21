@@ -4,7 +4,7 @@
 % License: GNU General Public License Version 2
 % -----------------------------------------------------------------------------
 
-function [F] = kktSystemPlus(b, B, c, C, M, s, q, u, y, params)
+function [F] = kktSystem(b, B, c, C, M, s, q, u, y, params)
 
 % Let's see who's in where
 % mu                   :   scalar
