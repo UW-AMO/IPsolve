@@ -53,7 +53,7 @@ else
     if(pFlag)
         Omega   =  B'*(Tn\B)+ Bm'*(Tm\Bm);
     else
-        Omega   = Bm'*(Tm\Bm);
+        Omega   = B'*(T\B);
     end   
     dy      = Omega\r4;
 end
