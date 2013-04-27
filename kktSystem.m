@@ -39,6 +39,7 @@ else
     r3 = Bm*y - M*u - C*q + b;
 end
 
+
 if(pCon)
     Aw = params.A*w;
     r4 = r + params.A'*y - params.a;
