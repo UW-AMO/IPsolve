@@ -20,6 +20,8 @@ Q = speye(length(q));
 Q = spdiags(q, 0, Q);
 
 if(pCon)
+   WR = speye(length(w));
+   WR = spdiags(w./r, 0, WR);
    W =  speye(length(w));
    W = spdiags(w, 0, W);
 end
@@ -50,7 +52,7 @@ if(pCon)
     r4      = -(r + A'*y - a);
     r5      = mu + (A'*y - a).*w;
     Awr5r = A*(w + (r5./r));
-    SpOmegaMod =  A*diag(w./r)*A';
+    SpOmegaMod =  A*WR*A';
 else
     Awr5r = 0;
     SpOmegaMod = 0*speye(n);
