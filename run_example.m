@@ -103,10 +103,9 @@ params.mu = 0;
 
 Fin = kktSystem(b, Bm, c, C, M, sIn, qIn, uIn,  rIn, wIn, yIn,params);
 
-[yOut, uOut, qOut, sOut, wOut, rOut, info] = ipSolver(b, Bm, c, C, M, sIn, qIn, uIn, rIn, wIn, yIn, params);
+[yOut, uOut, qOut, sOut, rOut, wOut, info] = ipSolver(b, Bm, c, C, M, sIn, qIn, uIn, rIn, wIn, yIn, params);
 
 Fout = kktSystem(b, Bm, c, C, M, sOut, qOut, uOut, rOut, wOut, yOut, params);
-
 
 ok = norm(Fout) < 1e-6;
 
