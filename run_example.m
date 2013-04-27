@@ -9,7 +9,7 @@ function [ yOut ] = run_example( H, z, measurePLQ, processPLQ, params )
 
 t_start = tic;
 
-if(~isempty(params))
+if(isfield(params, 'lambda'))
     par.lambda = params.lambda;
 end
 
@@ -90,7 +90,7 @@ uIn = zeros(K, 1);
 yIn   = zeros(n, 1);
 
 if(params.constraints)
-    P = size(A, 2);
+    P = size(params.A, 2);
     rIn = 100*ones(P, 1);
     wIn = 100*ones(P, 1);
 else

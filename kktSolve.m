@@ -45,8 +45,10 @@ end
 
 
 if(pCon)
-    r4      = -(r + params.A'*y - a);
-    r5      = mu + (params.A'*y - a).*w;
+    A = params.A;
+    a = params.a;
+    r4      = -(r + A'*y - a);
+    r5      = mu + (A'*y - a).*w;
     Awr5r = A*(w + (r5./r));
     SpOmegaMod =  A*diag(w./r)*A';
 else
