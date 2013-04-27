@@ -18,14 +18,20 @@ function [r1, r2, r3, r4] = kktSystem(b, Bm, c, C, M, s, q, u, y, params)
 % M                    :   KxK, all in U space
 
 pFlag = params.pFlag; % is there a process term?
+if(pFlag)
+   Bn = params.B2; 
+end
+
+
 mu = params.mu; % IP relaxation
 m = params.m; 
+
 
 r1 = s + C'*u - c;
 r2 = q.*s - mu;
 if(pFlag)
-    r3 = [Bm*y; params.B2*y]- M*u - C*q + b;
-    r4 = Bm'*u(1:m) + params.B2'*u(m+1:end);
+    r3 = [Bm*y; Bn*y]- M*u - C*q + b;
+    r4 = Bm'*u(1:m) + Bn'*u(m+1:end);
 else
     r3 = Bm*y - M*u - C*q + b;
     r4 = Bm'*u;
