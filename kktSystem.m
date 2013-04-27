@@ -29,18 +29,34 @@ end
 mu = params.mu; % IP relaxation
 m = params.m; 
 
+pCon = params.constraints;
 
 r1 = s + C'*u - c;
 r2 = q.*s - mu;
 if(pFlag)
     r3 = [Bm*y; Bn*y]- M*u - C*q + b;
-    r4 = Bm'*u(1:m) + Bn'*u(m+1:end);
 else
     r3 = Bm*y - M*u - C*q + b;
-    r4 = Bm'*u;
 end
 
-F = [r1;r2;r3;r4];
+if(pCon)
+    Aw = params.A*w;
+    r4 = r + params.A'*y - a;
+    r5 = w.*r - mu;
+else
+    Aw = 0;
+    r4 = [];
+    r5 = [];
+end
+
+if(pFlag)
+     r6 = Bm'*u(1:m) + Bn'*u(m+1:end) + Aw;
+else
+     r6 = Bm'*u + Aw;
+end
+
+
+F = [r1;r2;r3;r4;r5;r6];
 
 % don't forget negative sign
 

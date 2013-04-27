@@ -7,6 +7,8 @@
 function [ds, dq, du, dr, dw, dy] = kktSolve(b, Bm, c, C, M, s, q, u, r, w, y, params)
 
 pFlag = params.pFlag;
+pCon = params.constraints;
+
 mu = params.mu;
 n = params.n;
 m = params.m;
@@ -16,6 +18,12 @@ D = speye(length(q));
 D = spdiags(q./s, 0, D);
 Q = speye(length(q));
 Q = spdiags(q, 0, Q);
+
+if(pCon)
+   W =  speye(length(w));
+   W = spdiags(w, 0, W);
+end
+
 
 T       = M + C*D*C';
 % if two pieces, exploit structure
@@ -35,27 +43,48 @@ else
     r3      = -(Bm*y - M*u - C*q + b) + C*(r2./s);
 end
 
+
+if(pCon)
+    r4      = -(r + params.A'*y - a);
+    r5      = mu + (params.A'*y - a).*w;
+    Awr5r = A*(w + (r5./r));
+    SpOmegaMod =  A*diag(w./r)*A';
+else
+    Awr5r = 0;
+    SpOmegaMod = 0*speye(n);
+end
+
+
 utr = u - T\r3;
 if(pFlag)
-    r4      = -Bm'*utr(1:m) - Bn'*utr(m+1:end);
+    r6      = -Bm'*utr(1:m) - Bn'*utr(m+1:end) - Awr5r ;
 else
-    r4      = -Bm'*utr;
+    r6      = -Bm'*utr - Awr5r;
 end
 
 
 % compute dy
 if pFlag && n >= m
-    BTB = Bn'*(Tn\Bn); % large sparse matrix
+    BTB = Bn'*(Tn\Bn) + SpOmegaMod; % large sparse matrix
     TBAB = Tm + Bm*(BTB\Bm'); % small dense matrix
-    Air4 = BTB\r4;
+    Air4 = BTB\r6;
     dy = Air4 - BTB\((Bm'*(TBAB\(Bm*Air4))));
 else
     if(pFlag)
-        Omega   =  Bn'*(Tn\Bn)+ Bm'*(Tm\Bm);
+        Omega   =  Bn'*(Tn\Bn)+ Bm'*(Tm\Bm) + SpOmegaMod;
     else
-        Omega   = Bm'*(T\Bm);
+        Omega   = Bm'*(T\Bm) + SpOmegaMod;
     end   
-    dy      = Omega\r4;
+    dy      = Omega\r6;
+end
+
+% compute dw and dr
+if(pCon)
+    dw      = (r5 + W*params.A'*dy)./r;
+    dr      = r4 - params.A'*dy;
+else
+    dw = [];
+    dr = [];
 end
 
 % compute du
@@ -68,8 +97,5 @@ end
 %compute dq and ds
 dq      = (r2 + Q*C'*du)./s;
 ds      = r1 - C'*du;
-
-dr = [];
-dw = [];
 
 end

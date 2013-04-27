@@ -64,12 +64,17 @@ end
 par.size = m;
 [Mv Cv cv bv Bv] = loadPenalty(H, z, measurePLQ, par);
 
+
+%%%%%%
+
 K = size(Bv, 1);
-par.pFlag = pFlag;
+params.pFlag = pFlag;
+params.m = m;
+params.n = n;
 if(pFlag)
     [b, c, C, M] = addPLQ(bv, cv, Cv, Mv, bw, cw, Cw, Mw);
     Bm = Bv;
-    par.B2 = Bw;
+    params.B2 = Bw;
     K = K + size(Bw,1);
 else
     b = bv; Bm = Bv; c = cv; C = Cv; M = Mv;
@@ -94,13 +99,13 @@ else
 end
 
 
-par.mu = 0;
+params.mu = 0;
 
-Fin = kktSystem(b, Bm, c, C, M, sIn, qIn, uIn,  rIn, wIn, yIn,par);
+Fin = kktSystem(b, Bm, c, C, M, sIn, qIn, uIn,  rIn, wIn, yIn,params);
 
-[yOut, uOut, qOut, sOut, wOut, rOut, info] = ipSolver(b, Bm, c, C, M, sIn, qIn, uIn, rIn, wIn, yIn, par);
+[yOut, uOut, qOut, sOut, wOut, rOut, info] = ipSolver(b, Bm, c, C, M, sIn, qIn, uIn, rIn, wIn, yIn, params);
 
-Fout = kktSystem(b, Bm, c, C, M, sOut, qOut, uOut, rOut, wOut, yOut, par);
+Fout = kktSystem(b, Bm, c, C, M, sOut, qOut, uOut, rOut, wOut, yOut, params);
 
 
 ok = norm(Fout) < 1e-6;
