@@ -4,7 +4,7 @@
 % License: GNU General Public License Version 2
 % -----------------------------------------------------------------------------
 
-function [r1, r2, r3, r4] = kktSystem(b, Bm, c, C, M, s, q, u, y, params)
+function [F] = kktSystem(b, Bm, c, C, M, s, q, u, r, w, y, params)
 
 % Let's see who's in where
 % mu                   :   scalar
@@ -18,6 +18,9 @@ function [r1, r2, r3, r4] = kktSystem(b, Bm, c, C, M, s, q, u, y, params)
 % M                    :   KxK, all in U space
 
 pFlag = params.pFlag; % is there a process term?
+
+
+
 if(pFlag)
    Bn = params.B2; 
 end
@@ -36,6 +39,8 @@ else
     r3 = Bm*y - M*u - C*q + b;
     r4 = Bm'*u;
 end
+
+F = [r1;r2;r3;r4];
 
 % don't forget negative sign
 

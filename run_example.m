@@ -14,10 +14,14 @@ if(~isempty(params))
 end
 
 
-if(~isfield(params, 'procLinear'))
-   params.procLinear = 0; 
+if(~isfield(params, 'constraints'))
+   params.constraints = 0; 
 end
-    
+
+if(~isfield(params, 'procLinear'))
+    params.procLinear = 0;
+end
+
 params.AA = H;
 params.b = z;
 
@@ -80,17 +84,28 @@ qIn = 100*ones(L, 1);
 uIn = zeros(K, 1);
 yIn   = zeros(n, 1);
 
-par.mu = 0;
-Fin = kktSystem(b, Bm, c, C, M, sIn, qIn, uIn, yIn, par);
+if(params.constraints)
+    P = size(A, 2);
+    rIn = 100*ones(P, 1);
+    wIn = 100*ones(P, 1);
+else
+   rIn = [];
+   wIn = [];
+end
 
-[yOut, uOut, qOut, sOut, info] = ipSolver(b, Bm, c, C, M, sIn, qIn, uIn, yIn, par);
 
 par.mu = 0;
-Fout = kktSystem(b, Bm, c, C, M, sOut, qOut, uOut, yOut, par);
+
+Fin = kktSystem(b, Bm, c, C, M, sIn, qIn, uIn,  rIn, wIn, yIn,par);
+
+[yOut, uOut, qOut, sOut, wOut, rOut, info] = ipSolver(b, Bm, c, C, M, sIn, qIn, uIn, rIn, wIn, yIn, par);
+
+Fout = kktSystem(b, Bm, c, C, M, sOut, qOut, uOut, rOut, wOut, yOut, par);
+
 
 ok = norm(Fout) < 1e-6;
 
-disp(sprintf('In, %f, Final, %f, mu, %f, itr %d\n', norm(Fin), norm(Fout), info.muOut, info.itr));
+fprintf('In, %f, Final, %f, mu, %f, itr %d\n', norm(Fin), norm(Fout), info.muOut, info.itr);
 
 toc(t_start);
 
