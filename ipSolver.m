@@ -4,7 +4,7 @@
 % License: GNU General Public License Version 2
 % -----------------------------------------------------------------------------
 
-function [yOut, uOut, qOut, sOut, info] = ipSolver(b, B, c, C, M, s, q, u, y, params)
+function [yOut, uOut, qOut, sOut, info] = ipSolver(b, Bm, c, C, M, s, q, u, y, params)
 
 converge = 0;
 max_itr = 100;
@@ -23,9 +23,11 @@ while ( ~ converge ) && (itr < max_itr)
 
 
     itr = itr + 1;
-    F                        = kktSystem(b, B, c, C, M, s, q, u, y, params);
+    [r1, r2, r3, r4]                        = kktSystem(b, Bm, c, C, M, s, q, u, y, params);
+    F = [r1;r2;r3;r4];
 
-    [ds, dq, du, dy] =  kktSolve(b, B, c, C, M, s, q, u, y, params);
+
+    [ds, dq, du, dy] =  kktSolve(b, Bm, c, C, M, s, q, u, y, params);
     
     ratio      = [ ds ; dq] ./ [s ; q ];
 
@@ -69,7 +71,9 @@ while ( ~ converge ) && (itr < max_itr)
         end
 
 
-        F_new = kktSystem(b, B, c, C, M, s_new, q_new, u_new, y_new, params);
+        [r1, r2, r3, r4] = kktSystem(b, Bm, c, C, M, s_new, q_new, u_new, y_new, params);
+
+        F_new = [r1;r2;r3;r4];
 
 
         G     = max(abs(F));

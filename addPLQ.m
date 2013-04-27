@@ -7,10 +7,9 @@
 
 
 
-function [bout, Bout, cout, Cout, Mout] = addPLQ(b1, B1, c1, C1, M1, b2, B2, c2, C2, M2)
+function [bout, cout, Cout, Mout] = addPLQ(b1, c1, C1, M1, b2, c2, C2, M2)
 
 bout = [b1; b2];
-Bout = [B1; B2];
 cout = [c1; c2];
 
 Cout = [C1, 0*speye(size(C1,1), size(C2,2));

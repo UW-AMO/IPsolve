@@ -4,7 +4,7 @@
 % License: GNU General Public License Version 2
 % -----------------------------------------------------------------------------
 
-function [F] = kktSystem(b, B, c, C, M, s, q, u, y, params)
+function [r1, r2, r3, r4] = kktSystem(b, Bm, c, C, M, s, q, u, y, params)
 
 % Let's see who's in where
 % mu                   :   scalar
@@ -19,19 +19,18 @@ function [F] = kktSystem(b, B, c, C, M, s, q, u, y, params)
 
 pFlag = params.pFlag; % is there a process term?
 mu = params.mu; % IP relaxation
-n = params.n;   % process size
+m = params.m; 
 
 r1 = s + C'*u - c;
 r2 = q.*s - mu;
 if(pFlag)
-    r3 = [B*y; params.B2*y]- M*u - C*q + b;
-    r4 = B'*u(1:n) + params.B2'*u(n+1:end);
+    r3 = [Bm*y; params.B2*y]- M*u - C*q + b;
+    r4 = Bm'*u(1:m) + params.B2'*u(m+1:end);
 else
-    r3 = B*y - M*u - C*q + b;
-    r4 = B'*u;
+    r3 = Bm*y - M*u - C*q + b;
+    r4 = Bm'*u;
 end
 
-F = [r1;r2;r3;r4];
 % don't forget negative sign
 
 

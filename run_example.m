@@ -14,13 +14,30 @@ if(~isempty(params))
 end
 
 
+if(~isfield(params, 'procLinear'))
+   params.procLinear = 0; 
+end
+    
 params.AA = H;
 params.b = z;
 
 m = size(params.AA, 1);
 par.m = m;
+
 n = size(params.AA, 2);
-par.n = n;
+
+if(params.procLinear)
+    K = params.K;
+    k = params.k;
+    par.size = length(k);
+    par.n = par.size;
+else
+    K = speye(n);
+    k = zeros(n,1);
+    par.size = n;
+    par.n = n;
+end
+
 
 % for huber; later this can come in.
 par.kappa = 1;
@@ -31,9 +48,11 @@ if(isempty(processPLQ))
     pFlag = 0;
 end
 
-par.size = n;
+
+
+
 if(pFlag)
-    [Mw Cw cw bw Bw] = loadPenalty(speye(n), zeros(n,1), processPLQ, par);
+    [Mw Cw cw bw Bw] = loadPenalty(K, k, processPLQ, par);
 end
 
 % Define measurement PLQ
@@ -44,12 +63,12 @@ par.size = m;
 K = size(Bv, 1);
 par.pFlag = pFlag;
 if(pFlag)
-    [b, ~, c, C, M] = addPLQ(bw, Bw, cw, Cw, Mw, bv, Bv, cv, Cv, Mv);
-    B = Bw;
-    par.B2 = Bv;
-    K = K + size(B,1);
+    [b, c, C, M] = addPLQ(bv, cv, Cv, Mv, bw, cw, Cw, Mw);
+    Bm = Bv;
+    par.B2 = Bw;
+    K = K + size(Bw,1);
 else
-    b = bv; B = Bv; c = cv; C = Cv; M = Mv;
+    b = bv; Bm = Bv; c = cv; C = Cv; M = Mv;
 end
 C = C';
 
@@ -62,12 +81,12 @@ uIn = zeros(K, 1);
 yIn   = zeros(n, 1);
 
 par.mu = 0;
-Fin = kktSystem(b, B, c, C, M, sIn, qIn, uIn, yIn, par);
+Fin = kktSystem(b, Bm, c, C, M, sIn, qIn, uIn, yIn, par);
 
-[yOut, uOut, qOut, sOut, info] = ipSolver(b, B, c, C, M, sIn, qIn, uIn, yIn, par);
+[yOut, uOut, qOut, sOut, info] = ipSolver(b, Bm, c, C, M, sIn, qIn, uIn, yIn, par);
 
 par.mu = 0;
-Fout = kktSystem(b, B, c, C, M, sOut, qOut, uOut, yOut, par);
+Fout = kktSystem(b, Bm, c, C, M, sOut, qOut, uOut, yOut, par);
 
 ok = norm(Fout) < 1e-6;
 

@@ -4,7 +4,7 @@
 % License: GNU General Public License Version 2
 % -----------------------------------------------------------------------------
 
-function [ds, dq, du, dy] = kktSolve(b, B, c, C, M, s, q, u, y, params)
+function [ds, dq, du, dy] = kktSolve(b, Bm, c, C, M, s, q, u, y, params)
 
 pFlag = params.pFlag;
 mu = params.mu;
@@ -20,9 +20,9 @@ Q = spdiags(q, 0, Q);
 T       = M + C*D*C';
 % if two pieces, exploit structure
 if(pFlag)
-    Tn = T(1:n, 1:n);
-    Tm = T(n+1:end, n+1:end);
-    Bm = params.B2;
+    Tm = T(1:m, 1:m);
+    Tn = T(m+1:end, m+1:end);
+    Bn = params.B2;
 end
 
 
@@ -30,39 +30,39 @@ end
 r1      = -s - C'*u + c;
 r2      = mu + (C'*u - c).*q;
 if(pFlag)
-    r3      = -([B*y; params.B2*y] - M*u - C*q + b) + C*(r2./s);
+    r3      = -([Bm*y; Bn*y] - M*u - C*q + b) + C*(r2./s);
 else
-    r3      = -(B*y - M*u - C*q + b) + C*(r2./s);
+    r3      = -(Bm*y - M*u - C*q + b) + C*(r2./s);
 end
 
 utr = u - T\r3;
 if(pFlag)
-    r4      = -B'*utr(1:n) - Bm'*utr(n+1:end);
+    r4      = -Bm'*utr(1:m) - Bn'*utr(m+1:end);
 else
-    r4      = -B'*utr;
+    r4      = -Bm'*utr;
 end
 
 
 % compute dy
 if pFlag && n >= m
-    BTB = B'*(B\Tn); % large sparse matrix
-    TBAB = Tm + Bm*BTB*Bm'; % small dense matrix
-    Air4 = BTB*r4;
-    dy = Air4 - BTB*(Bm'*(TBAB\(Bm*Air4)));
+    BTB = Bn'*(Tn\Bn); % large sparse matrix
+    TBAB = Tm + Bm*(BTB\Bm'); % small dense matrix
+    Air4 = BTB\r4;
+    dy = Air4 - BTB\((Bm'*(TBAB\(Bm*Air4))));
 else
     if(pFlag)
-        Omega   =  B'*(Tn\B)+ Bm'*(Tm\Bm);
+        Omega   =  Bn'*(Tn\Bn)+ Bm'*(Tm\Bm);
     else
-        Omega   = B'*(T\B);
+        Omega   = Bm'*(T\Bm);
     end   
     dy      = Omega\r4;
 end
 
 % compute du
 if(pFlag)
-    du      = T\(-r3 + [B*dy; params.B2*dy]);
+    du      = T\(-r3 + [Bm*dy; Bn*dy]);
 else
-    du      = T\(-r3 + B*dy);
+    du      = T\(-r3 + Bm*dy);
 end
 
 %compute dq and ds
