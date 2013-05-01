@@ -95,7 +95,9 @@ while ( ~ converge ) && (itr < max_itr)
         ok   = (G_new <= (1 - gamma *lambda) * G);
     end
     
-    fprintf('Iter: %d, norm(F): %f, mu: %f\n', itr, G_new, params.mu);
+    if(~params.silent)
+        fprintf('Iter: %d, norm(F): %f, mu: %f\n', itr, G_new, params.mu);
+    end
     
     
     if ~ok

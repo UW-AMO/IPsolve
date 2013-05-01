@@ -13,26 +13,20 @@ switch(penalty)
         B = speye(m);     
         
     case 'l1'
-        M = 0*speye(m);
-        C = [speye(m); -speye(m)];
-        c = ones(2*m, 1);
-        b = zeros(m,1);
-        B = speye(m); 
-        
-    case 'l1Lam' % lambda-scaled penalty. 
         lam = params.lambda;
         M = 0*speye(m);
         C = [speye(m); -speye(m)];
         c = lam*ones(2*m, 1);
         b = zeros(m,1);
-        B = speye(m);   
-
+        B = speye(m); 
+        
 
     case 'qreg' % lambda-scaled penalty.
+        lam = params.lambda;
         tau = params.tau;
         M = 0*speye(m);
         C = [speye(m); -speye(m)];
-        c = [(1-tau)*ones(m,1); tau*ones(m,1)];
+        c = lam*[(1-tau)*ones(m,1); tau*ones(m,1)];
 %        c = lam*ones(2*m, 1);
         b = zeros(m,1);
         B = speye(m);   

@@ -9,9 +9,23 @@ function [ yOut ] = run_example( H, z, measurePLQ, processPLQ, params )
 
 t_start = tic;
 
+if(~isfield(params, 'silent'))
+   params.silent = 0; 
+end
+
 if(isfield(params, 'lambda'))
     par.lambda = params.lambda;
+else
+    par.lambda = 1;
 end
+
+if(isfield(params,'kappa'))
+    par.kappa = params.kappa;
+else
+    par.kappa = 1;
+end
+
+
 
 if(isfield(params, 'tau'))
     par.tau = params.tau;
@@ -46,8 +60,6 @@ else
 end
 
 
-% for huber; later this can come in.
-par.kappa = 1;
 
 % Define process PLQ
 pFlag = 1;
