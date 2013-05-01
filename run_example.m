@@ -13,6 +13,9 @@ if(isfield(params, 'lambda'))
     par.lambda = params.lambda;
 end
 
+if(isfield(params, 'tau'))
+    par.tau = params.tau;
+end
 
 if(~isfield(params, 'constraints'))
    params.constraints = 0; 
