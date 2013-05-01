@@ -1,3 +1,9 @@
+% -----------------------------------------------------------------------------
+% ipSolve: General Interior Point Solver for PLQ functions Copyright (C) 2013
+% Authors: Aleksandr Y. Aravkin: sasha.aravkin at gmail dot com
+% License: Eclipse Public License version 1.0
+% -----------------------------------------------------------------------------
+
 function [ M C c b B ] = loadPenalty( H, z, penalty, params )
 %loadPENALTY Loads one of several predefined penalties, 
 % for IP solver. 

@@ -1,7 +1,7 @@
 % -----------------------------------------------------------------------------
 % ipSolve: General Interior Point Solver for PLQ functions Copyright (C) 2013
 % Authors: Aleksandr Y. Aravkin: sasha.aravkin at gmail dot com
-% License: GNU General Public License Version 2
+% License: Eclipse Public License version 1.0
 % -----------------------------------------------------------------------------
 
 function [yOut, uOut, qOut, sOut, rOut, wOut, info] = ipSolver(b, Bm, c, C, M, s, q, u, r, w, y, params)
