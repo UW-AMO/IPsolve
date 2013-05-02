@@ -1,9 +1,11 @@
-% L1-regularized least-squares example
-%Generate problem data
+% Written by Aleksandr Aravkin (saravkin at us dot ibm dot com)
+% L1-regularized L1-fitting example
 
 randn('seed', 0);
 rand('seed',0);
 
+% Choose whether linear operator is well-conditioned (1) 
+%or ill-conditioned (0)
 wellCond = 1;
 
 
@@ -40,7 +42,7 @@ params.procLinear = 0;
 
 
 params.lambda = lambda;
-[xIP] = run_example(A, b, 'l1', 'l1Lam', params);
+[xIP] = run_example(A, b, 'l1', 'l1', params);
 %Reporting
 
 

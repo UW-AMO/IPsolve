@@ -6,6 +6,7 @@
 
 function [ds, dq, du, dr, dw, dy] = kktSolve(b, Bm, c, C, M, s, q, u, r, w, y, params)
 
+pSparse = params.pSparse;
 pFlag = params.pFlag;
 pCon = params.constraints;
 
@@ -68,7 +69,7 @@ end
 
 
 % compute dy
-if pFlag && n >= m
+if pFlag && n >= m && pSparse
     BTB = Bn'*(Tn\Bn) + SpOmegaMod; % large sparse matrix
     TBAB = Tm + Bm*(BTB\Bm'); % small dense matrix
     Air4 = BTB\r6;

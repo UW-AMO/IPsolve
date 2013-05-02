@@ -1,10 +1,13 @@
-% L1-regularized least-squares example
+% Written by Aleksandr Aravkin (saravkin at us dot ibm dot com)
+% Lasso Example
+
+
 %Generate problem data
 
 randn('seed', 0);
 rand('seed',0);
 
-m = 300;       % number of examples
+m = 1500;       % number of examples
 n = 5000;       % number of features
 p = 100/n;      % sparsity density
 
@@ -22,7 +25,7 @@ lambda = 0.1*lambda_max;
 params.procLinear = 0;
 
 params.lambda = lambda;
-[xIP] = run_example(A, b, 'l2', 'l1Lam', params);
+[xIP] = run_example(A, b, 'l2', 'l1', params);
 %Reporting
 
 accu = 0.5*norm(A*xADMM - b)^2 + lambda*norm(xADMM,1) - ...

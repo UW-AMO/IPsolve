@@ -55,12 +55,14 @@ par.m = m;
 n = size(params.AA, 2);
 
 if(params.procLinear)
-    K = params.K;
+    params.pSparse = 0;
+    pLin = params.K;
     k = params.k;
     par.size = length(k);
     par.n = par.size;
 else
-    K = speye(n);
+    params.pSparse = 1;
+    pLin = speye(n);
     k = zeros(n,1);
     par.size = n;
     par.n = n;
@@ -78,12 +80,13 @@ end
 
 
 if(pFlag)
-    [Mw Cw cw bw Bw] = loadPenalty(K, k, processPLQ, par);
+    [Mw Cw cw bw Bw] = loadPenalty(pLin, k, processPLQ, par);
 end
 
 % Define measurement PLQ
 
 par.size = m;
+par.lambda = 1; 
 [Mv Cv cv bv Bv] = loadPenalty(H, z, measurePLQ, par);
 
 
