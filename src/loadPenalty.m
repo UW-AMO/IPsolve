@@ -39,12 +39,14 @@ switch(penalty)
 
         
     case 'l2'
-        M = speye(m);
+        mMult    = params.mMult;
+        M    = mMult*speye(m);
         C    = zeros(1,m); % easy to satisfy 0'*u <= 1
         c    = 1;
         b    = zeros(m, 1);
         B    = speye(m);
                
+        
     case 'hinge'
         M = 0*speye(m);
         C = [speye(m); -speye(m)];

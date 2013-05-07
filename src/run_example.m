@@ -16,35 +16,43 @@ function [ yOut ] = run_example( H, z, measurePLQ, processPLQ, params )
 
 t_start = tic;
 
+
 if(~isfield(params, 'silent'))
    params.silent = 0; 
 end
-
-if(isfield(params, 'lambda'))
-    par.lambda = params.lambda;
-else
-    par.lambda = 1;
-end
-
-if(isfield(params,'kappa'))
-    par.kappa = params.kappa;
-else
-    par.kappa = 1;
-end
-
-
-
-if(isfield(params, 'tau'))
-    par.tau = params.tau;
-end
-
 if(~isfield(params, 'constraints'))
    params.constraints = 0; 
 end
-
 if(~isfield(params, 'procLinear'))
     params.procLinear = 0;
 end
+
+
+if(~isfield(params, 'proc_mMult'))
+   params.proc_mMult = 1; 
+end
+if(~isfield(params, 'proc_lambda'))
+    params.proc_lambda = 1;
+end
+if(~isfield(params,'proc_kappa'))
+    params.proc_kappa = 1;
+end
+if(~isfield(params, 'proc_tau'))
+    params.proc_tau = 1;
+end
+if(~isfield(params, 'meas_mMult'))
+   params.meas_mMult = 1; 
+end
+if(~isfield(params, 'meas_lambda'))
+    params.meas_lambda = 1;
+end
+if(~isfield(params,'meas_kappa'))
+    params.meas_kappa = 1;
+end
+if(~isfield(params, 'meas_tau'))
+    params.meas_tau = 1;
+end
+
 
 params.AA = H;
 params.b = z;
@@ -55,7 +63,7 @@ par.m = m;
 n = size(params.AA, 2);
 
 if(params.procLinear)
-    params.pSparse = 0;
+    params.pSparse = 0; % should be true if K is sparse
     pLin = params.K;
     k = params.k;
     par.size = length(k);
@@ -78,15 +86,22 @@ end
 
 
 
-
 if(pFlag)
+    par.mMult = params.proc_mMult;
+    par.lambda = params.proc_lambda;
+    par.kappa = params.proc_kappa;
+    par.tau = params.proc_tau;
     [Mw Cw cw bw Bw] = loadPenalty(pLin, k, processPLQ, par);
 end
 
 % Define measurement PLQ
 
 par.size = m;
-par.lambda = 1; 
+par.mMult = params.meas_mMult;
+par.lambda = params.meas_lambda;
+par.kappa = params.meas_kappa;
+par.tau = params.meas_tau;
+
 [Mv Cv cv bv Bv] = loadPenalty(H, z, measurePLQ, par);
 
 
