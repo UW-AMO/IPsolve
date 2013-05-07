@@ -59,6 +59,15 @@ switch(penalty)
         b    = zeros(m, 1);
         B    = speye(m);
         
+    case 'l1m'
+        lam = params.lambda;
+        M = 0*speye(m);
+        C = [speye(m); -speye(m); zeros(2,m-1) ones(2,1)];
+        c = [lam*ones(2*m, 1); zeros(2,1)];
+        b = zeros(m,1);
+        B = speye(m); 
+
+        
     otherwise
         error('unknown PLQ');
 end
