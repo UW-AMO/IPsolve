@@ -26,7 +26,6 @@ switch(penalty)
         b = zeros(m,1);
         B = speye(m); 
         
-
     case 'qreg' % lambda-scaled penalty.
         lam = params.lambda;
         tau = params.tau;
@@ -37,6 +36,14 @@ switch(penalty)
         b = zeros(m,1);
         B = speye(m);   
 
+    case 'qhuber' % quantile huber penalty.
+        tau = params.tau;
+        kappa = params.kappa;
+        M = kappa*speye(m);
+        C = [speye(m); -speye(m)];
+        c = [(1-tau)*ones(m,1); tau*ones(m,1)];
+        b = zeros(m,1);
+        B = speye(m);           
         
     case 'l2'
         mMult    = params.mMult;
