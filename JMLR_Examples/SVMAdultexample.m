@@ -22,7 +22,7 @@ wADMM = xADMM(1:end-2);
 bADMM = xADMM(end);
 
 params.procLinear = 0;
-params.lambda = lambda;
+params.meas_lambda = lambda;
 [xIP] = run_example(-A, -ones(m,1), 'hinge', 'l2m', params);
 
 

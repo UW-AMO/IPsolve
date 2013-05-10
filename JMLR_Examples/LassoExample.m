@@ -24,7 +24,8 @@ lambda = 0.1*lambda_max;
 
 params.procLinear = 0;
 
-params.lambda = lambda;
+params.proc_lambda = lambda;
+params.silent = 0;
 [xIP] = run_example(A, b, 'l2', 'l1', params);
 %Reporting
 

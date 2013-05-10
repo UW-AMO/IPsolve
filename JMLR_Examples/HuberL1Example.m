@@ -51,8 +51,8 @@ else
     [xADMM history] = huberl1(A, b, lambda, 1.0, 1.0);
 end
 
-params.lambda = lambda;
-params.kappa = 1;
+params.proc_lambda = lambda;
+params.meas_kappa = 1;
 [xIP] = run_example(A, b, 'huber', 'l1', params);
 %Reporting
 

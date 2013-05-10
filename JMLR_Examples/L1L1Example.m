@@ -41,7 +41,8 @@ params.procLinear = 0;
 [xADMM history] = l1l1(A, b, lambda, 1.0, 1.0);
 
 
-params.lambda = lambda;
+params.proc_lambda = lambda;
+params.meas_lambda = 1;
 [xIP] = run_example(A, b, 'l1', 'l1', params);
 %Reporting
 
