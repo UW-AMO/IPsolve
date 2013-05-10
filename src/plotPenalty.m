@@ -47,19 +47,19 @@ L = size(C, 2);
 sIn = 100*ones(L, 1);
 qIn = 100*ones(L, 1);
 uIn = zeros(K, 1);
-yIn   = zeros(n, 1);
 rIn = 100*ones(P, 1);
 wIn = 100*ones(P, 1);
 
 params.constraints = 1;
 params.A = [1, -1];
 
-mus = -2:.1:2;
+mus = -3:.05:3;
 len = length(mus);    
 vals = zeros(len,1);
 
 for i = 1:len
     params.a = [mus(i);-mus(i)]; % constrains x = \mu. 
+    yIn = mus(i);
     [yOut, uOut, ~, ~, ~, ~, ~] = ipSolver(b, B, c, C, M, sIn, qIn, uIn, rIn, wIn, yIn, params);
 %    fprintf('yOut value us: %5.3f\n', yOut);
     vals(i) = uOut'*B*yOut - 0.5*uOut'*M*uOut;
