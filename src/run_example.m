@@ -26,8 +26,6 @@ end
 if(~isfield(params, 'procLinear'))
     params.procLinear = 0;
 end
-
-
 if(~isfield(params, 'proc_mMult'))
    params.proc_mMult = 1; 
 end
