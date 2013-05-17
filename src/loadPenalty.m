@@ -11,6 +11,21 @@ function [ M C c b B ] = loadPenalty( H, z, penalty, params )
 m = params.size;
 
 switch(penalty)
+    
+    case 'vapnik'
+        lam = params.lambda;
+        eps = params.eps;
+        M = 0*speye(2*m);
+        %Cp = [speye(m) 0*speye(m); 0*speye(m) -speye(m)];
+        %C = [Cp; Cp];
+        %c = [ones(m, 1); zeros(m,1); ones(m,1); zeros(m,1)];
+        C = [speye(2*m); -speye(2*m)];
+        c = [lam*ones(2*m, 1); zeros(2*m,1)]; % vapnik!
+       
+        
+        b = -eps*ones(2*m,1);
+        B = [speye(m); -speye(m)];
+    
     case 'huber'
         M = speye(m);
         C = [speye(m); -speye(m)];

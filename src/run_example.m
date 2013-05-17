@@ -29,6 +29,9 @@ end
 if(~isfield(params, 'proc_mMult'))
    params.proc_mMult = 1; 
 end
+if(~isfield(params, 'proc_eps'))
+    params.proc_eps = 0.2;
+end
 if(~isfield(params, 'proc_lambda'))
     params.proc_lambda = 1;
 end
@@ -40,6 +43,9 @@ if(~isfield(params, 'proc_tau'))
 end
 if(~isfield(params, 'meas_mMult'))
    params.meas_mMult = 1; 
+end
+if(~isfield(params, 'meas_eps'))
+    params.meas_eps = 0.2;
 end
 if(~isfield(params, 'meas_lambda'))
     params.meas_lambda = 1;
