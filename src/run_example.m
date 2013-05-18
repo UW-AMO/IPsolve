@@ -105,6 +105,7 @@ par.mMult = params.meas_mMult;
 par.lambda = params.meas_lambda;
 par.kappa = params.meas_kappa;
 par.tau = params.meas_tau;
+par.eps = params.meas_eps;
 
 [Mv Cv cv bv Bv] = loadPenalty(H, z, measurePLQ, par);
 
