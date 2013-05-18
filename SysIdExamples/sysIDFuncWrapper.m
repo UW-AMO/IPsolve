@@ -1,6 +1,8 @@
 
 clear all
 
+addpath(genpath('../'))
+
 n = 30;
 m = 500;
 
@@ -48,14 +50,27 @@ params.meas_mMult = 0.5;
 params.proc_lambda = 1;
 params.meas_lambda = 1;
 
+params.meas_eps = 0.2;
 
-%% L2-L2 and test
-fs = sysIDFunc(z,Q,H,sigma, 'l2', 'l2', params);
+
+
+%% Vapnik-L2 and test
+fs = sysIDFunc(z,Q,H,sigma, 'vapnik', 'l2', params);
 
 cvx_begin 
   variables f(n)
-  minimize( sum_square(z - H*f) + sigma^2*f'* inv(Q) * f)  
+  minimize( sum(pos(z - H*f - params.meas_eps)) + sum(pos(-z + H*f - params.meas_eps)) + sigma^2*f'* inv(Q) * f)  
 cvx_end 
+
+
+
+%% L2-L2 and test
+% fs = sysIDFunc(z,Q,H,sigma, 'l2', 'l2', params);
+% 
+% cvx_begin 
+%   variables f(n)
+%   minimize( sum_square(z - H*f) + sigma^2*f'* inv(Q) * f)  
+% cvx_end 
 
 %% L1-L1 and test
 %fs = sysIDFunc(z,Q,H,sigma, 'l1', 'l2', params);
