@@ -27,7 +27,8 @@ end
 
 
 mu = params.mu; % IP relaxation
-m = params.m; 
+%m = params.m; 
+m = size(Bm, 1);
 
 pCon = params.constraints;
 

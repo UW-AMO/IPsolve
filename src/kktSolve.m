@@ -12,7 +12,8 @@ pCon = params.constraints;
 
 mu = params.mu;
 n = params.n;
-m = params.m;
+%m = params.m;
+m = size(Bm, 1);
 
 % defining auxiliary terms
 D = speye(length(q));
