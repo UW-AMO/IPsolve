@@ -21,6 +21,8 @@ n = 1;
 params.n = 1;
 P = 2; % constraints
 
+params.pFlag = 0;
+
 if(~isfield(params, 'pSparse'))
     params.pSparse = 1;
 end
