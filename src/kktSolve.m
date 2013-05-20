@@ -4,11 +4,12 @@
 % License: Eclipse Public License version 1.0
 % -----------------------------------------------------------------------------
 
-function [ds, dq, du, dr, dw, dy] = kktSolve(b, Bm, c, C, M, s, q, u, r, w, y, params)
+function [ds, dq, du, dr, dw, dy] = kktSolve(b, Bm, c, C, Mfun, s, q, u, r, w, y, params)
 
 pSparse = params.pSparse;
 pFlag = params.pFlag;
 pCon = params.constraints;
+funM = isa(Mfun, 'function_handle');
 
 mu = params.mu;
 n = params.n;
@@ -28,8 +29,33 @@ if(pCon)
    W = spdiags(w, 0, W);
 end
 
+if(pFlag)
+   MMn = params.M2;
+   um = u(1:m);
+   un = u(m+1:end);
+else
+   um = u;    
+end
 
-T       = M + C*D*C';
+if(funM)
+    [Mum, MMm] = Mfun(um);
+else
+    MMm = Mfun;
+    Mum = MMm*um;
+end
+
+if(pFlag)
+   Mu = [Mum; MMn*un];  
+else
+    Mu = Mum;
+end
+    
+MM = [MMm, 0*speye(size(MMm,1), size(MMn,2));
+    0*speye(size(MMn,1), size(MMm,2)) MMn];
+
+
+
+T       = MM + C*D*C';
 % if two pieces, exploit structure
 if(pFlag)
     Tm = T(1:m, 1:m);
@@ -42,9 +68,9 @@ end
 r1      = -s - C'*u + c;
 r2      = mu + (C'*u - c).*q;
 if(pFlag)
-    r3      = -([Bm*y; Bn*y] - M*u - C*q + b) + C*(r2./s);
+    r3      = -([Bm*y; Bn*y] - Mu - C*q + b) + C*(r2./s);
 else
-    r3      = -(Bm*y - M*u - C*q + b) + C*(r2./s);
+    r3      = -(Bm*y - Mu - C*q + b) + C*(r2./s);
 end
 
 

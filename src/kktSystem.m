@@ -19,10 +19,11 @@ function [F] = kktSystem(b, Bm, c, C, M, s, q, u, r, w, y, params)
 
 pFlag = params.pFlag; % is there a process term?
 
-
+funM = isa(M, 'function_handle'); % for now, assume only measurement could be this way
 
 if(pFlag)
    Bn = params.B2; 
+   Mn = params.M2;
 end
 
 
@@ -34,10 +35,31 @@ pCon = params.constraints;
 
 r1 = s + C'*u - c;
 r2 = q.*s - mu;
+
 if(pFlag)
-    r3 = [Bm*y; Bn*y]- M*u - C*q + b;
+    um = u(1:m);
+    un = u(m+1:end);
 else
-    r3 = Bm*y - M*u - C*q + b;
+    um = u;
+end
+
+if(funM)
+   Mum = M(um); 
+else
+   Mum = M*um;
+end
+
+if(pFlag)
+   Mu = [Mum; Mn*un];  
+else
+    Mu = Mum;
+end
+
+
+if(pFlag)
+    r3 = [Bm*y; Bn*y]- Mu - C*q + b;
+else
+    r3 = Bm*y - Mu - C*q + b;
 end
 
 
@@ -52,9 +74,9 @@ else
 end
 
 if(pFlag)
-     r6 = Bm'*u(1:m) + Bn'*u(m+1:end) + Aw;
+     r6 = Bm'*um + Bn'*un + Aw;
 else
-     r6 = Bm'*u + Aw;
+     r6 = Bm'*um + Aw;
 end
 
 

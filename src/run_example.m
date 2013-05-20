@@ -117,9 +117,10 @@ params.pFlag = pFlag;
 params.m = m;
 params.n = n;
 if(pFlag)
-    [b, c, C, M] = addPLQ(bv, cv, Cv, Mv, bw, cw, Cw, Mw);
+    [b, c, C] = addPLQ(bv, cv, Cv, bw, cw, Cw);
     Bm = Bv;
     params.B2 = Bw;
+    params.M2 = Mw;
     K = K + size(Bw,1);
 else
     b = bv; Bm = Bv; c = cv; C = Cv; M = Mv;
@@ -146,11 +147,11 @@ end
 
 params.mu = 0;
 
-Fin = kktSystem(b, Bm, c, C, M, sIn, qIn, uIn,  rIn, wIn, yIn,params);
+Fin = kktSystem(b, Bm, c, C, Mv, sIn, qIn, uIn,  rIn, wIn, yIn,params);
 
-[yOut, uOut, qOut, sOut, rOut, wOut, info] = ipSolver(b, Bm, c, C, M, sIn, qIn, uIn, rIn, wIn, yIn, params);
+[yOut, uOut, qOut, sOut, rOut, wOut, info] = ipSolver(b, Bm, c, C, Mv, sIn, qIn, uIn, rIn, wIn, yIn, params);
 
-Fout = kktSystem(b, Bm, c, C, M, sOut, qOut, uOut, rOut, wOut, yOut, params);
+Fout = kktSystem(b, Bm, c, C, Mv, sOut, qOut, uOut, rOut, wOut, yOut, params);
 
 ok = norm(Fout) < 1e-6;
 
