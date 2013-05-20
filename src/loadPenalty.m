@@ -27,9 +27,11 @@ switch(penalty)
         B = [speye(m); -speye(m)];
     
     case 'huber'
-        M = speye(m);
+        kappa = params.kappa;
+        mMult = params.mMult;
+        M = mMult*kappa*speye(m);
         C = [speye(m); -speye(m)];
-        c = params.kappa*ones(2*m, 1);
+        c = ones(2*m, 1);
         b = zeros(m,1);
         B = speye(m);     
         
