@@ -38,23 +38,23 @@ while ( ~ converge ) && (itr < max_itr)
     if(any(isnan([ds; dq; du; dr; dw; dy])))
         error('Nans in IPsolve');
     end
-        
+    
     if(params.constraints)
         ratio      = [ ds ; dq; dr ; dw ] ./ [s ; q ;  r ; w ];
     else
         ratio      = [ ds ; dq] ./ [s ; q ];
     end
     
-
-    if(params.uConstraints)
-        maxLam = max((params.uMax-u)./du);
-            if(maxLam < 0)
-                maxLam = 1;
-            end
-    else
-       maxLam = 1; 
-    end
-
+%     
+%     if(params.uConstraints)
+%         maxLam = max((params.uMax-u)./du);
+%         if(maxLam < 0)
+%             maxLam = 1;
+%         end
+%     else
+%         maxLam = 1;
+%     end
+    
     ratioMax = max(max( - ratio ));
     
     
@@ -65,7 +65,7 @@ while ( ~ converge ) && (itr < max_itr)
         rNeg = -1./ratio(ratio < 0);
         %min(min(ratio))
         maxNeg = min(min(rNeg));
-        lambda = .99*min(min(maxNeg, maxLam), 1);
+        lambda = .99*min(min(maxNeg),1);
     end
     
     
@@ -90,10 +90,11 @@ while ( ~ converge ) && (itr < max_itr)
         q_new = q + lambda * dq;
         u_new = u + lambda * du;
         
-        %    if(params.uConstraints)
-        u_new = min(u_new, params.uMax);
-        u_new = max(u_new, params.uMin);
-        %    end
+        if(params.uConstraints)
+            
+            u_new = min(u_new, params.uMax);
+            u_new = max(u_new, params.uMin);
+        end
         y_new = y + lambda * dy;
         if(params.constraints)
             r_new = r + lambda * dr;

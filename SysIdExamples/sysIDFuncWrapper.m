@@ -55,7 +55,7 @@ params.meas_eps = 0.2;
 par.kappa = 0.01;
 par.mMult = 1/par.kappa;
 %par.lambda = 1/par.kappa;
-plotPenalty('huber', par);
+%plotPenalty('huber', par);
 
 
 %% Vapnik-L2 and test

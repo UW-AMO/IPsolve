@@ -85,11 +85,11 @@ end
 
 
 plot(mus, vals);
-if(plq == 'hybrid')
+%if(plq == 'hybrid')
 %    hold on;
  %   plot(mus, sqrt(1 + mus.^2/params.scale) - 1)
 %hold off;
-end
+%end
 ok = 1;
 
 end

@@ -1,6 +1,6 @@
 %clear all;
 
-example = 'hybrid';
+example = 'vapnik';
 
 
 switch(example)
