@@ -25,7 +25,7 @@ end
 if(~isfield(params, 'procLinear'))
     params.procLinear = 0;
 end
-if(~isfield(params, 'scale'))
+if(~isfield(params, 'proc_scale'))
     params.proc_scale = 1;
 end
 if(~isfield(params, 'proc_mMult'))
