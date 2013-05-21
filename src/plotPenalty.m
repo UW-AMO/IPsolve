@@ -12,7 +12,7 @@ z = 0;
 switch(plq)
     case{'vapnik'}
         K = 2;
-    case{'hybrid', 'student'}
+    case{'hybrid', 'student', 'studentPL'}
         K = 1;
         params.uConstraints = 1;
         params.uMax = params.scale;
@@ -61,12 +61,7 @@ C = C'; % this is funny.
 L = size(C, 2);
 sIn = 100*ones(L, 1);
 qIn = 100*ones(L, 1);
-switch(plq)
-    case{'student'}
-        uIn = zeros(K,1) + params.scale/2;
-    otherwise
-        uIn = zeros(K,1);
-end
+uIn = zeros(K,1);
 rIn = 100*ones(P, 1);
 wIn = 100*ones(P, 1);
 
@@ -97,7 +92,7 @@ hold on;
 switch(plq)
     case{'hybrid'}
         plot(mus, sqrt(1 + (mus*params.scale).^2) - 1);
-    case{'student'}
+    case{'student', 'studentPL'}
         plot(mus, log(1 + (mus*params.scale).^2));
     otherwise
         % do nothing

@@ -1,6 +1,6 @@
 %clear all;
 
-example = 'student';
+example = 'studentPL';
 
 
 switch(example)
@@ -16,7 +16,7 @@ switch(example)
     case{'huber'}
         plq = 'huber';
         
-        params.kappa = 0.01;
+        params.kappa = 0.2;
         plotPenalty(plq, params);
         
     case{'hybrid'}
@@ -32,11 +32,23 @@ switch(example)
         plq = 'student';
         params.constraints=1;
         params.uConstraints = 1;
+        params.scale =5;
+        params.silent = 1;
+        
+        plotPenalty(plq, params);
+
+        
+    case{'studentPL'}
+        plq = 'studentPL';
+        params.constraints=1;
+        params.uConstraints = 1;
+        params.kappa = 0.5;
         params.scale =1;
         params.silent = 1;
         
         plotPenalty(plq, params);
 
+        
         
     otherwise
         error('unknown example');

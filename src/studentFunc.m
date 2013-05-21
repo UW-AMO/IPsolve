@@ -7,9 +7,9 @@ scaledU = u/m;
 
 omu2 = 1-scaledU.^2;  % vector of weights
 
-%if(omu2 <= 0)
-%    error('omu2 <= 0'); 
-%end
+if(omu2 <= 0)
+    error('omu2 <= 0'); 
+end
 
 
 f = 1-log(2)-sqrt(1-scaledU.^2) + log(1+sqrt(omu2)); 

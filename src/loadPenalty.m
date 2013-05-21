@@ -12,6 +12,16 @@ m = params.size;
 
 switch(penalty)
 
+    case 'studentPL'
+        scale    = params.scale;
+        kappa = params.kappa;
+        C = [speye(m); -speye(m)];
+        c = kappa*ones(2*m, 1);
+        M    = @(x)studentFunc(x, scale);
+        b    = zeros(m, 1);
+        B    = speye(m);
+
+    
     case 'student'
         scale    = params.scale;
         M    = @(x)studentFunc(x, scale);
