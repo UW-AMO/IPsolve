@@ -14,9 +14,10 @@ switch(plq)
         K = 2;
     case{'hybrid'}
         K = 1;
+        eps = 1e-3;
         params.uConstraints = 1;
         params.uMax = params.scale;
-        params.uMin = 0*sqrt(1/params.scale);
+        params.uMin = -params.scale;%0*sqrt(1/params.scale);
     otherwise
         K = 1;
 end
@@ -63,7 +64,7 @@ sIn = 100*ones(L, 1);
 qIn = 100*ones(L, 1);
 switch(plq)
     case{'hybrid'}
-        uIn = zeros(K, 1) + params.scale/2;
+        uIn = zeros(K, 1);% + params.scale/2;
     otherwise
         uIn = zeros(K, 1);
 end
@@ -88,14 +89,14 @@ for i = 1:len
     else
         f = 0.5*uOut'*M*uOut;
     end
-    vals(i) = uOut'*(B*yOut + b) - f;
+    vals(i) = uOut'*(B*yOut - b) - f;
 end
 
 
 plot(mus, vals);
 if(plq == 'hybrid')
     hold on;
-    plot(mus, sqrt(1 + (mus/params.scale).^2) - 1)
+    plot(mus, sqrt(1 + (mus*params.scale).^2) - 1)
 hold off;
 %end
 ok = 1;

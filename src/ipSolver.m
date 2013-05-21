@@ -45,29 +45,33 @@ while ( ~ converge ) && (itr < max_itr)
         ratio      = [ ds ; dq] ./ [s ; q ];
     end
     
-%     
-%     if(params.uConstraints)
-%         maxLam = max((params.uMax-u)./du);
-%         if(maxLam < 0)
-%             maxLam = 1;
-%         end
-%     else
-%         maxLam = 1;
-%     end
-    
+    if(params.uConstraints)
+       ustepsPos = (params.uMax - u(du>=0))./(du(du>=0));
+       ustepsNeg = (params.uMin - u(du<0))./(du(du<0));
+       if(isempty(ustepsPos))
+           ustepsMax = max(ustepsNeg);
+       elseif isempty(ustepsNeg)
+           ustepsMax = max(ustepsPos);
+       else
+           ustepsMax = max(max(ustepsPos), max(ustepsNeg));
+       end
+    end
+        
     ratioMax = max(max( - ratio ));
     
     
     if (ratioMax <=0)
         lambda = 1;
-        
     else
         rNeg = -1./ratio(ratio < 0);
         %min(min(ratio))
         maxNeg = min(min(rNeg));
         lambda = .99*min(min(maxNeg),1);
     end
-    
+
+    if(params.uConstraints)
+        lambda = min(lambda, 0.99*ustepsMax);
+    end
     
     
     if(lambda <0)
@@ -90,11 +94,6 @@ while ( ~ converge ) && (itr < max_itr)
         q_new = q + lambda * dq;
         u_new = u + lambda * du;
         
-        if(params.uConstraints)
-            
-            u_new = min(u_new, params.uMax);
-            u_new = max(u_new, params.uMin);
-        end
         y_new = y + lambda * dy;
         if(params.constraints)
             r_new = r + lambda * dr;

@@ -22,7 +22,7 @@ switch(example)
     case{'hybrid'}
         plq = 'hybrid';
         params.uConstraints = 1;
-        params.scale = 1;
+        params.scale =5;
         params.silent = 1;
         
         plotPenalty(plq, params);

@@ -15,12 +15,10 @@ switch(penalty)
     case 'hybrid'
         scale    = params.scale;
         M    = @(x)hybridFunc(x, scale);
-        C    = ones(1,m); % easy to satisfy 0'*u <= 1
-        c    = params.scale;
-%        C    = speye(m); 
- %       c    = sqrt(2/scale)*ones(m,1);
-        %C    = zeros(1,m); % easy to satisfy 0'*u <= 1
-        %c    = 1;
+        C    = zeros(1,m); % easy to satisfy 0'*u <= 1
+        c    = 1;
+        %C = [speye(m); -speye(m)];
+        %c = scale*ones(2*m, 1);
         b    = zeros(m, 1);
         B    = speye(m);
     
