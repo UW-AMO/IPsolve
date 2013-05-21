@@ -22,11 +22,12 @@ n = 50;       % number of features
 
 p = 1;      % sparsity density
 
-x0 = randn(n, 1);
+x0 = rand(n, 1);
 A = randn(m,n);
 
 b = A*x0 + sqrt(0.001)*randn(m,1);
-b = b + 0*sprand(m,1,800/m);      % add sparse, large noise
+error = 1*sprand(m,1,0.1);
+b = b + error;     % add sparse, large noise
 
 params.procLinear = 0;
 
@@ -40,11 +41,11 @@ params.uMax = params.meas_scale;
 params.uMin = -params.meas_scale;
 
 
-boxSize = 2;
 params.constraints = 0; 
-Con = [speye(n); -speye(n)];
-params.a = boxSize*ones(2*n, 1);
-params.A = Con';
+%boxSize = 1;
+%Con = [speye(n); -speye(n)];
+%params.a = boxSize*ones(2*n, 1);
+%params.A = Con';
 
 
 [xIP] = run_example(A, b, 'student', [], params);
