@@ -26,7 +26,7 @@ x0 = randn(n, 1);
 A = randn(m,n);
 
 b = A*x0 + sqrt(0.001)*randn(m,1);
-%b = b + 10*sprand(m,1,300/m);      % add sparse, large noise
+b = b + 0*sprand(m,1,800/m);      % add sparse, large noise
 
 params.procLinear = 0;
 
@@ -35,7 +35,7 @@ params.procLinear = 0;
 
 params.meas_kappa = 1;
 params.uConstraints = 1;
-params.meas_scale = 2;
+params.meas_scale = 1;
 params.uMax = params.meas_scale;
 params.uMin = -params.meas_scale;
 
@@ -59,6 +59,10 @@ xMF = minFunc(mFun, zeros(n,1));
 
 fprintf('Our objective: %5.3f, minFunc objective: %5.3f\n', mFun(xIP), mFun(xMF));
 
+fprintf('Our distance from truth: %5.3f, minFunc distance from truth: %5.3f\n', norm(xIP-x0, inf), norm(xMF-x0, inf));
 
  fprintf('Inf norm between our solution and minFunc solution: %5.3f\n', norm(xMF - xIP, inf));
+ 
+ sum([abs((xIP-x0)./x0) abs((xMF-x0)./x0)])/n
+ 
 %[xIP xCVX]
