@@ -39,6 +39,12 @@ while ( ~ converge ) && (itr < max_itr)
         error('Nans in IPsolve');
     end
     
+   if(any(~isreal([ds; dq; du; dr; dw; dy])))
+       fprintf('iter = %d\n', itr);
+        error('complex values in IPsolve');
+    end
+   
+    
     if(params.constraints)
         ratio      = [ ds ; dq; dr ; dw ] ./ [s ; q ;  r ; w ];
     else
@@ -46,14 +52,18 @@ while ( ~ converge ) && (itr < max_itr)
     end
     
     if(params.uConstraints)
-       ustepsPos = (params.uMax - u(du>=0))./(du(du>=0));
+       ustepsPos = (params.uMax - u(du>0))./(du(du>0));
        ustepsNeg = (params.uMin - u(du<0))./(du(du<0));
-       if(isempty(ustepsPos))
-           ustepsMax = max(ustepsNeg);
-       elseif isempty(ustepsNeg)
-           ustepsMax = max(ustepsPos);
-       else
-           ustepsMax = max(max(ustepsPos), max(ustepsNeg));
+       if(isempty(ustepsPos) && isempty(ustepsNeg))
+           ustepsMax = 1;
+       else 
+           if(isempty(ustepsPos))
+               ustepsMax = min(ustepsNeg);
+           elseif isempty(ustepsNeg)
+               ustepsMax = min(ustepsPos);
+           else
+               ustepsMax = min(min(ustepsPos), min(ustepsNeg));
+           end
        end
     end
         
@@ -93,6 +103,13 @@ while ( ~ converge ) && (itr < max_itr)
         s_new = s + lambda * ds;
         q_new = q + lambda * dq;
         u_new = u + lambda * du;
+        if(params.uConstraints)
+            if(any(u_new > params.uMax))
+                error('u_new exceeds max constraints\n');
+            elseif (any(u_new < params.uMin))
+                error('u_new exceeds min constraints\n');
+            end
+        end
         
         y_new = y + lambda * dy;
         if(params.constraints)
@@ -102,6 +119,8 @@ while ( ~ converge ) && (itr < max_itr)
             r_new = [];
             w_new = [];
         end
+        
+        
         
         %
         
@@ -146,13 +165,20 @@ while ( ~ converge ) && (itr < max_itr)
     info.itr = itr;
     
     
-    
-    G1 = sum(q.*s);
+    if(params.constraints)
+        G1 = sum(q.*s) + sum(r.*w);
+    else
+        G1 = sum(q.*s);
+    end
     converge = (G1 < epsComp) || (G_new < epsF);
     
     % every third step is a corrector
     if ( mod(itr, 3) ~= 1 )
-        compMuFrac = G1/(2*length(s));
+        if(params.constraints)
+            compMuFrac = G1/(2*length(s) + 2*length(r));
+        else
+            compMuFrac = G1/(2*length(s));
+        end
         muNew = .1*compMuFrac;
         params.mu = muNew;
     end

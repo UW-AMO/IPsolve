@@ -11,14 +11,21 @@ function [ M C c b B ] = loadPenalty( H, z, penalty, params )
 m = params.size;
 
 switch(penalty)
+
+    case 'student'
+        scale    = params.scale;
+        M    = @(x)studentFunc(x, scale);
+        C    = zeros(1,m); % easy to satisfy 0'*u <= 1
+        c    = 1;
+        b    = zeros(m, 1);
+        B    = speye(m);
+
     
     case 'hybrid'
         scale    = params.scale;
         M    = @(x)hybridFunc(x, scale);
         C    = zeros(1,m); % easy to satisfy 0'*u <= 1
         c    = 1;
-        %C = [speye(m); -speye(m)];
-        %c = scale*ones(2*m, 1);
         b    = zeros(m, 1);
         B    = speye(m);
     

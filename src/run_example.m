@@ -43,7 +43,7 @@ end
 if(~isfield(params, 'proc_tau'))
     params.proc_tau = 1;
 end
-if(~isfield(params, 'scale'))
+if(~isfield(params, 'meas_scale'))
     params.meas_scale = 1;
 end
 if(~isfield(params, 'meas_mMult'))
@@ -145,8 +145,8 @@ yIn   = zeros(n, 1);
 
 if(params.constraints)
     P = size(params.A, 2);
-    rIn = 100*ones(P, 1);
-    wIn = 100*ones(P, 1);
+    rIn = 10*ones(P, 1);
+    wIn = 10*ones(P, 1);
 else
    rIn = [];
    wIn = [];

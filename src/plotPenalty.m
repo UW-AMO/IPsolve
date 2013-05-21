@@ -14,10 +14,15 @@ switch(plq)
         K = 2;
     case{'hybrid'}
         K = 1;
-        eps = 1e-3;
         params.uConstraints = 1;
         params.uMax = params.scale;
-        params.uMin = -params.scale;%0*sqrt(1/params.scale);
+        params.uMin = -params.scale;
+    case{'student'}
+        K = 1;
+        params.uConstraints = 1;
+        params.uMax = params.scale;
+        params.uMin = 0;
+            
     otherwise
         K = 1;
 end
@@ -63,10 +68,10 @@ L = size(C, 2);
 sIn = 100*ones(L, 1);
 qIn = 100*ones(L, 1);
 switch(plq)
-    case{'hybrid'}
-        uIn = zeros(K, 1);% + params.scale/2;
+    case{'student'}
+        uIn = zeros(K,1) + params.scale/2;
     otherwise
-        uIn = zeros(K, 1);
+        uIn = zeros(K,1);
 end
 rIn = 100*ones(P, 1);
 wIn = 100*ones(P, 1);
@@ -94,9 +99,15 @@ end
 
 
 plot(mus, vals);
-if(plq == 'hybrid')
-    hold on;
-    plot(mus, sqrt(1 + (mus*params.scale).^2) - 1)
+hold on;
+switch(plq)
+    case{'hybrid'}
+        plot(mus, sqrt(1 + (mus*params.scale).^2) - 1);
+    case{'student'}
+        plot(mus, log(1 + (mus*params.scale).^2));
+    otherwise
+        % do nothing
+end
 hold off;
 %end
 ok = 1;

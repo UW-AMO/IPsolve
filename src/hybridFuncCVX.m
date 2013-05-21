@@ -11,7 +11,6 @@ scaledU = u/m;
 %    error('omu2 <= 0'); 
 %end
 
-
 f = sum(1-sqrt(1-scaledU.^2)); %+ m*nu2/sqrt(omu2) - sqrt(1/(omu2));
 
 %g = (1/m)*(scaledU./sqrt(1-scaledU.^2)); %m*u/sqrt(omu2);
