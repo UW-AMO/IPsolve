@@ -16,7 +16,6 @@ function [ yOut ] = run_example( H, z, measurePLQ, processPLQ, params )
 
 t_start = tic;
 
-
 if(~isfield(params, 'silent'))
    params.silent = 0; 
 end
@@ -25,6 +24,9 @@ if(~isfield(params, 'constraints'))
 end
 if(~isfield(params, 'procLinear'))
     params.procLinear = 0;
+end
+if(~isfield(params, 'scale'))
+    params.proc_scale = 1;
 end
 if(~isfield(params, 'proc_mMult'))
    params.proc_mMult = 1; 
@@ -40,6 +42,9 @@ if(~isfield(params,'proc_kappa'))
 end
 if(~isfield(params, 'proc_tau'))
     params.proc_tau = 1;
+end
+if(~isfield(params, 'scale'))
+    params.meas_scale = 1;
 end
 if(~isfield(params, 'meas_mMult'))
    params.meas_mMult = 1; 
@@ -95,6 +100,8 @@ if(pFlag)
     par.lambda = params.proc_lambda;
     par.kappa = params.proc_kappa;
     par.tau = params.proc_tau;
+    par.scale = params.proc_scale;
+    
     [Mw Cw cw bw Bw] = loadPenalty(pLin, k, processPLQ, par);
 end
 
@@ -106,6 +113,7 @@ par.lambda = params.meas_lambda;
 par.kappa = params.meas_kappa;
 par.tau = params.meas_tau;
 par.eps = params.meas_eps;
+par.scale = params.meas_scale;
 
 [Mv Cv cv bv Bv] = loadPenalty(H, z, measurePLQ, par);
 
