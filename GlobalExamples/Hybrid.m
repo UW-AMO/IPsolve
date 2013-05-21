@@ -35,7 +35,7 @@ params.procLinear = 0;
 
 params.meas_kappa = 1;
 params.uConstraints = 1;
-params.meas_scale = 5;
+params.meas_scale = 2;
 params.uMax = params.meas_scale;
 params.uMin = -params.meas_scale;
 

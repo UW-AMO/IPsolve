@@ -1,6 +1,6 @@
 %clear all;
 
-example = 'hybrid';
+example = 'student';
 
 
 switch(example)
@@ -30,8 +30,9 @@ switch(example)
         
     case{'student'}
         plq = 'student';
+        params.constraints=1;
         params.uConstraints = 1;
-        params.scale =5;
+        params.scale =1;
         params.silent = 1;
         
         plotPenalty(plq, params);

@@ -12,17 +12,11 @@ z = 0;
 switch(plq)
     case{'vapnik'}
         K = 2;
-    case{'hybrid'}
+    case{'hybrid', 'student'}
         K = 1;
         params.uConstraints = 1;
         params.uMax = params.scale;
         params.uMin = -params.scale;
-    case{'student'}
-        K = 1;
-        params.uConstraints = 1;
-        params.uMax = params.scale;
-        params.uMin = 0;
-            
     otherwise
         K = 1;
 end
