@@ -1,6 +1,6 @@
 %clear all;
 
-example = 'vapnik';
+example = 'hybrid';
 
 
 switch(example)
@@ -21,7 +21,8 @@ switch(example)
         
     case{'hybrid'}
         plq = 'hybrid';
-        params.scale = 5;
+        params.uConstraints = 1;
+        params.scale = 1;
         params.silent = 1;
         
         plotPenalty(plq, params);

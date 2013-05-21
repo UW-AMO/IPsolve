@@ -15,7 +15,7 @@ switch(plq)
     case{'hybrid'}
         K = 1;
         params.uConstraints = 1;
-        params.uMax = sqrt(1/params.scale);
+        params.uMax = params.scale;
         params.uMin = 0*sqrt(1/params.scale);
     otherwise
         K = 1;
@@ -28,6 +28,9 @@ P = 2; % constraints
 
 params.pFlag = 0;
 
+if(~isfield(params, 'uConstraints'))
+    params.uConstraints = 0;
+end
 if(~isfield(params, 'pSparse'))
     params.pSparse = 1;
 end
@@ -58,7 +61,12 @@ C = C'; % this is funny.
 L = size(C, 2);
 sIn = 100*ones(L, 1);
 qIn = 100*ones(L, 1);
-uIn = zeros(K, 1) + 0.05 ;
+switch(plq)
+    case{'hybrid'}
+        uIn = zeros(K, 1) + params.scale/2;
+    otherwise
+        uIn = zeros(K, 1);
+end
 rIn = 100*ones(P, 1);
 wIn = 100*ones(P, 1);
 
@@ -85,10 +93,10 @@ end
 
 
 plot(mus, vals);
-%if(plq == 'hybrid')
-%    hold on;
- %   plot(mus, sqrt(1 + mus.^2/params.scale) - 1)
-%hold off;
+if(plq == 'hybrid')
+    hold on;
+    plot(mus, sqrt(1 + (mus/params.scale).^2) - 1)
+hold off;
 %end
 ok = 1;
 
