@@ -132,7 +132,7 @@ L = size(C, 2);
 
 sIn = 100*ones(L, 1);
 qIn = 100*ones(L, 1);
-uIn = zeros(K, 1);
+uIn = zeros(K, 1) + 0.01;
 yIn   = zeros(n, 1);
 
 if(params.constraints)

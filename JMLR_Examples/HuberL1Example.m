@@ -9,7 +9,7 @@ rand('seed',0);
 % choose which ADMM program to run; whether to 
 % to use smooth version (1, runs huberl1smooth) 
 % or nonsmooth (2, runs huberl1)
-smooth = 1;
+smooth = 0;
 
 % Choose whether the problem is well conditioned (1) or ill-conditioned (0)
 wellCond = 1;

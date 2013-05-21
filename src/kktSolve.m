@@ -49,9 +49,13 @@ if(pFlag)
 else
     Mu = Mum;
 end
-    
-MM = [MMm, 0*speye(size(MMm,1), size(MMn,2));
+
+if(pFlag)
+    MM = [MMm, 0*speye(size(MMm,1), size(MMn,2));
     0*speye(size(MMn,1), size(MMm,2)) MMn];
+else
+    MM = MMm;
+end
 
 
 

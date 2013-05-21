@@ -10,6 +10,11 @@ if(~isfield(params, 'constraints'))
     params.constraints = 0;
 end
 
+if~isfield(params, 'uConstraints')
+    params.uConstraints = 0;
+end
+
+
 
 converge = 0;
 max_itr = 100;
@@ -30,15 +35,28 @@ while ( ~ converge ) && (itr < max_itr)
     itr = itr + 1;
     [F] = kktSystem(b, Bm, c, C, M, s, q, u, r, w, y, params);
     [ds, dq, du, dr, dw, dy] =  kktSolve(b, Bm, c, C, M, s, q, u, r, w, y, params);
-
+    if(any(isnan([ds; dq; du; dr; dw; dy])))
+        error('Nans in IPsolve');
+    end
+        
     if(params.constraints)
         ratio      = [ ds ; dq; dr ; dw ] ./ [s ; q ;  r ; w ];
     else
-        ratio      = [ ds ; dq] ./ [s ; q ];        
+        ratio      = [ ds ; dq] ./ [s ; q ];
     end
     
-    
+
+    if(params.uConstraints)
+        maxLam = max((params.uMax-u)./du);
+            if(maxLam < 0)
+                maxLam = 1;
+            end
+    else
+       maxLam = 1; 
+    end
+
     ratioMax = max(max( - ratio ));
+    
     
     if (ratioMax <=0)
         lambda = 1;
@@ -47,15 +65,19 @@ while ( ~ converge ) && (itr < max_itr)
         rNeg = -1./ratio(ratio < 0);
         %min(min(ratio))
         maxNeg = min(min(rNeg));
-        lambda = .99*min(maxNeg, 1);
+        lambda = .99*min(min(maxNeg, maxLam), 1);
     end
     
     
+    
+    if(lambda <0)
+        error('negative lambda');
+    end
     % line search
     %
     ok        = 0;
     kount     = 0;
-    max_kount = 25;
+    max_kount = 35;
     beta = 0.5;
     lambda = lambda/beta;
     while (~ok) && (kount < max_kount)
@@ -67,6 +89,11 @@ while ( ~ converge ) && (itr < max_itr)
         s_new = s + lambda * ds;
         q_new = q + lambda * dq;
         u_new = u + lambda * du;
+        
+        %    if(params.uConstraints)
+        u_new = min(u_new, params.uMax);
+        u_new = max(u_new, params.uMin);
+        %    end
         y_new = y + lambda * dy;
         if(params.constraints)
             r_new = r + lambda * dr;
@@ -84,9 +111,9 @@ while ( ~ converge ) && (itr < max_itr)
             error('ipSolver: program error, negative entries');
         end
         
-%        [F] = kktSystem(b, Bm, c, C, M, s_new, q_new, u_new, r_new, w_new, y_new, params);
+        %        [F] = kktSystem(b, Bm, c, C, M, s_new, q_new, u_new, r_new, w_new, y_new, params);
         [F_new] = kktSystem(b, Bm, c, C, M, s_new, q_new, u_new, r_new, w_new, y_new, params);
-                
+        
         
         
         G     = max(abs(F));

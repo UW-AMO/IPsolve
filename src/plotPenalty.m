@@ -12,6 +12,11 @@ z = 0;
 switch(plq)
     case{'vapnik'}
         K = 2;
+    case{'hybrid'}
+        K = 1;
+        params.uConstraints = 1;
+        params.uMax = sqrt(1/params.scale);
+        params.uMin = 0*sqrt(1/params.scale);
     otherwise
         K = 1;
 end
@@ -53,7 +58,7 @@ C = C'; % this is funny.
 L = size(C, 2);
 sIn = 100*ones(L, 1);
 qIn = 100*ones(L, 1);
-uIn = zeros(K, 1);
+uIn = zeros(K, 1) + 0.05 ;
 rIn = 100*ones(P, 1);
 wIn = 100*ones(P, 1);
 
@@ -69,11 +74,22 @@ for i = 1:len
     yIn = mus(i);
     [yOut, uOut, ~, ~, ~, ~, ~] = ipSolver(b, B, c, C, M, sIn, qIn, uIn, rIn, wIn, yIn, params);
     %    fprintf('yOut value us: %5.3f\n', yOut);
-    vals(i) = uOut'*(B*yOut + b) - 0.5*uOut'*M*uOut;
+    if(isa(M, 'function_handle'))
+        Mfun = M;
+        [~,~,f] = Mfun(uOut); 
+    else
+        f = 0.5*uOut'*M*uOut;
+    end
+    vals(i) = uOut'*(B*yOut + b) - f;
 end
 
 
 plot(mus, vals);
+if(plq == 'hybrid')
+%    hold on;
+ %   plot(mus, sqrt(1 + mus.^2/params.scale) - 1)
+%hold off;
+end
 ok = 1;
 
 end

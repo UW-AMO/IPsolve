@@ -1,6 +1,6 @@
-clear all;
+%clear all;
 
-example = 'huber';
+example = 'hybrid';
 
 
 switch(example)
@@ -17,6 +17,13 @@ switch(example)
         plq = 'huber';
         
         params.kappa = 0.01;
+        plotPenalty(plq, params);
+        
+    case{'hybrid'}
+        plq = 'hybrid';
+        params.scale = 5;
+        params.silent = 1;
+        
         plotPenalty(plq, params);
         
     otherwise
