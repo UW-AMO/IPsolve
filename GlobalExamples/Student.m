@@ -48,7 +48,8 @@ params.constraints = 0;
 %params.A = Con';
 
 
-[xIP] = run_example(A, b, 'student', [], params);
+params.meas_kappa = 1;
+[xIP] = run_example(A, b, 'studentPL', [], params);
 %Reporting
 
 prm.df = params.meas_scale;
