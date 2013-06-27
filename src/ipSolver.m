@@ -184,7 +184,7 @@ while ( ~ converge ) && (itr < max_itr)
                w_new = [];
             end
             y_new = y_new + lambda*dy;
-            params.mu = muOld;
+            %params.mu = muOld;
             
             
             if min(min(s_new)) <= 0 || min(min(q_new)) <=0
@@ -227,14 +227,14 @@ while ( ~ converge ) && (itr < max_itr)
     converge = (G1 < epsComp) || (G_new < epsF);
     
     % every third step is a corrector
-    if ( mod(itr, 3) ~= 1 )
+%    if ( mod(itr, 3) ~= 1 )
         if(params.constraints)
             compMuFrac = G1/(2*length(s) + 2*length(r));
         else
             compMuFrac = G1/(2*length(s));
         end
-        muNew = .1*compMuFrac;
+        muNew = compMuFrac;
         params.mu = muNew;
-    end
+ %   end
 end
 end
