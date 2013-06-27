@@ -28,6 +28,7 @@ while ( ~ converge ) && (itr < max_itr)
     
     params.useChol = 0;
     [ds, dq, du, dr, dw, dy, params] =  kktSolveNew(b, Bm, c, C, M, s, q, u, r, w, y, params);
+%    [ds, dq, du, dr, dw, dy] =  kktSolve(b, Bm, c, C, M, s, q, u, r, w, y, params);
     if(any(isnan([ds; dq; du; dr; dw; dy])))
         error('Nans in IPsolve');
     end
@@ -136,14 +137,14 @@ while ( ~ converge ) && (itr < max_itr)
     
     % if using mehrotra extension 
     if(params.mehrotra)
-            muOld = params.mu;
+%            muOld = params.mu;
             params.mu = params.mu*(1-lambda);
             if(params.mu <0)
                 error('negative mu passed through mehrotra');
             end
             params.useChol = 0;
             [ds, dq, du, dr, dw, dy, params] =  kktSolveNew(b, Bm, c, C, M, s_new, q_new, u_new, r_new, w_new, y_new, params);
-            %[ds, dq, du, dr, dw, dy] =  kktSolve(b, Bm, c, C, M, s, q, u, r, w, y, params);
+            %[ds, dq, du, dr, dw, dy] =  kktSolve(b, Bm, c, C, M, s_new, q_new, u_new, r_new, w_new, y_new, params);
             if(any(isnan([ds; dq; du; dr; dw; dy])))
                 error('Nans in IPsolve');
             end
@@ -238,7 +239,7 @@ while ( ~ converge ) && (itr < max_itr)
         else
             compMuFrac = G1/(2*length(s));
         end
-        muNew = compMuFrac;
+        muNew = 0.1*compMuFrac;
         params.mu = muNew;
  %   end
  converge = (G1 < epsComp) || (G_new < epsF) || params.mu < epsMu;
