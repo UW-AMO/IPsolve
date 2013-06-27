@@ -85,7 +85,7 @@ while ( ~ converge ) && (itr < max_itr)
     %
     ok        = 0;
     kount     = 0;
-    max_kount = 35;
+    max_kount = 10;
     beta = 0.5;
     lambda = lambda/beta;
     while (~ok) && (kount < max_kount)
@@ -136,15 +136,19 @@ while ( ~ converge ) && (itr < max_itr)
     end
     
     % if using mehrotra extension 
-    if(params.mehrotra)
+    if(params.mehrotra) %&&  mod(itr, 3) == 1 
 %            muOld = params.mu;
             params.mu = params.mu*(1-lambda);
             if(params.mu <0)
                 error('negative mu passed through mehrotra');
             end
+            
             params.useChol = 0;
             [ds, dq, du, dr, dw, dy, params] =  kktSolveNew(b, Bm, c, C, M, s_new, q_new, u_new, r_new, w_new, y_new, params);
-            %[ds, dq, du, dr, dw, dy] =  kktSolve(b, Bm, c, C, M, s_new, q_new, u_new, r_new, w_new, y_new, params);
+            
+            %params.useChol = 1;
+            %[ds, dq, du, dr, dw, dy, params] =  kktSolveNew(b, Bm, c, C, M, s, q, u, r, w, y_new, params);
+
             if(any(isnan([ds; dq; du; dr; dw; dy])))
                 error('Nans in IPsolve');
             end
