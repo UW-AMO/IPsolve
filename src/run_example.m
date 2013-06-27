@@ -16,12 +16,15 @@ function [ yOut ] = run_example( H, z, measurePLQ, processPLQ, params )
 
 t_start = tic;
 
+% general algorithm parameteres
 if(~isfield(params, 'silent'))
    params.silent = 0; 
 end
 if(~isfield(params, 'constraints'))
    params.constraints = 0; 
 end
+
+% controls for process model 
 if(~isfield(params, 'procLinear'))
     params.procLinear = 0;
 end
@@ -43,6 +46,8 @@ end
 if(~isfield(params, 'proc_tau'))
     params.proc_tau = 1;
 end
+
+% control for measurement model
 if(~isfield(params, 'meas_scale'))
     params.meas_scale = 1;
 end
@@ -60,6 +65,16 @@ if(~isfield(params,'meas_kappa'))
 end
 if(~isfield(params, 'meas_tau'))
     params.meas_tau = 1;
+end
+
+% control for restricting conjugate domain
+if(~isfield(params, 'uConstraints'))
+    params.uConstraints = 0;
+end
+
+% control for using predictor-corrector
+if(~isfield(params, 'mehrotra'))
+    params.mehrotra = 0;
 end
 
 

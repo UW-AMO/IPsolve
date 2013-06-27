@@ -6,16 +6,6 @@
 
 function [yOut, uOut, qOut, sOut, rOut, wOut, info] = ipSolver(b, Bm, c, C, M, s, q, u, r, w, y, params)
 
-if(~isfield(params, 'constraints'))
-    params.constraints = 0;
-end
-
-if~isfield(params, 'uConstraints')
-    params.uConstraints = 0;
-end
-
-
-
 converge = 0;
 max_itr = 100;
 gamma   = .01;
@@ -139,6 +129,70 @@ while ( ~ converge ) && (itr < max_itr)
         G_new = max(abs(F_new));
         
         ok   = (G_new <= (1 - gamma *lambda) * G);
+    end
+    
+    % if using mehrotra extension 
+    if(params.mehrotra)
+            muOld = params.mu;
+            params.mu = params.mu*(1-lambda);
+            if(params.mu <0)
+                error('negative mu passed through mehrotra');
+            end
+            [ds, dq, du, dr, dw, dy] =  kktSolve(b, Bm, c, C, M, s_new, q_new, u_new, r_new, w_new, y_new, params);
+            if(any(isnan([ds; dq; du; dr; dw; dy])))
+                error('Nans in IPsolve');
+            end
+            
+            if(any(~isreal([ds; dq; du; dr; dw; dy])))
+                fprintf('iter = %d\n', itr);
+                error('complex values in IPsolve');
+            end
+            
+            
+            if(params.constraints)
+                ratio      = [ ds ; dq; dr ; dw ] ./ [s_new ; q_new ;  r_new ; w_new ];
+            else
+                ratio      = [ ds ; dq] ./ [s_new ; q_new ];
+            end
+
+            ratioMax = max(max( - ratio ));
+    
+            
+            if (ratioMax <=0)
+                lambda = 1;
+            else
+                rNeg = -1./ratio(ratio < 0);
+                %min(min(ratio))
+                maxNeg = min(min(rNeg));
+                lambda = .99*min(min(maxNeg),1);
+            end
+            
+            if(params.uConstraints)
+                lambda = min(lambda, 0.99*ustepsMax);
+            end
+            
+
+            
+            s_new = s_new + lambda*ds;
+            q_new = q_new + lambda*dq;
+            u_new = u_new + lambda*du;
+            if(params.constraints)
+                r_new = r_new + lambda*dr;
+                w_new = w_new + lambda*dw;
+            else
+               r_new = [];
+               w_new = [];
+            end
+            y_new = y_new + lambda*dy;
+            params.mu = muOld;
+            
+            
+            if min(min(s_new)) <= 0 || min(min(q_new)) <=0
+                fprintf('min of s_new: %5.3f, min of q_new: %5.3f\n', min(min(s_new)), min(min(q_new)));
+                error('ipSolver: program error, negative entries in mehrotra part');
+            end
+
+            
     end
     
     if(~params.silent)
