@@ -111,8 +111,8 @@ if pFlag && n >= m && pSparse
         TBABchol = chol(TBAB);
         params.chol = TBABchol;
     end
-    Air4 = TBABchol\(TBABchol'\r6);
-%    Air4 = BTB\r6;
+%    Air4 = TBABchol\(TBABchol'\r6);
+    Air4 = BTB\r6;
     dy = Air4 - BTB\((Bm'*(TBABchol\(TBABchol'\(Bm*Air4)))));
 else
     if(pFlag)
