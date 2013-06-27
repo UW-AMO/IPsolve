@@ -12,9 +12,9 @@ gamma   = .01;
 epsilon = 1e-6;
 
 
-epsComp = 1e-6;
-epsF = 1e-6;
-epsMu = 1e-6;
+epsComp = 1e-5;
+epsF = 1e-5;
+epsMu = 1e-5;
 itr = 0;
 
 %initialize mu
@@ -25,7 +25,9 @@ while ( ~ converge ) && (itr < max_itr)
     
     itr = itr + 1;
     [F] = kktSystem(b, Bm, c, C, M, s, q, u, r, w, y, params);
-    [ds, dq, du, dr, dw, dy] =  kktSolve(b, Bm, c, C, M, s, q, u, r, w, y, params);
+    
+    params.useChol = 0;
+    [ds, dq, du, dr, dw, dy, params] =  kktSolveNew(b, Bm, c, C, M, s, q, u, r, w, y, params);
     if(any(isnan([ds; dq; du; dr; dw; dy])))
         error('Nans in IPsolve');
     end
@@ -139,7 +141,9 @@ while ( ~ converge ) && (itr < max_itr)
             if(params.mu <0)
                 error('negative mu passed through mehrotra');
             end
-            [ds, dq, du, dr, dw, dy] =  kktSolve(b, Bm, c, C, M, s_new, q_new, u_new, r_new, w_new, y_new, params);
+            params.useChol = 0;
+            [ds, dq, du, dr, dw, dy, params] =  kktSolveNew(b, Bm, c, C, M, s_new, q_new, u_new, r_new, w_new, y_new, params);
+            %[ds, dq, du, dr, dw, dy] =  kktSolve(b, Bm, c, C, M, s, q, u, r, w, y, params);
             if(any(isnan([ds; dq; du; dr; dw; dy])))
                 error('Nans in IPsolve');
             end
