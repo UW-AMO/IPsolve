@@ -14,6 +14,7 @@ epsilon = 1e-6;
 
 epsComp = 1e-6;
 epsF = 1e-6;
+epsMu = 1e-6;
 itr = 0;
 
 %initialize mu
@@ -224,7 +225,7 @@ while ( ~ converge ) && (itr < max_itr)
     else
         G1 = sum(q.*s);
     end
-    converge = (G1 < epsComp) || (G_new < epsF);
+   % converge = (G1 < epsComp) || (G_new < epsF);
     
     % every third step is a corrector
 %    if ( mod(itr, 3) ~= 1 )
@@ -236,5 +237,7 @@ while ( ~ converge ) && (itr < max_itr)
         muNew = compMuFrac;
         params.mu = muNew;
  %   end
+ converge = (G1 < epsComp) || (G_new < epsF) || params.mu < epsMu;
+
 end
 end
