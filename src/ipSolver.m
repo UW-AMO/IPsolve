@@ -20,11 +20,29 @@ itr = 0;
 %initialize mu
 params.mu = 100;
 
+
+if(~params.silent)
+    logB = ' %5i  %13.7f  %13.7f  %13.7f';
+    logH = ' %5s  %13s  %13s  %13s \n';
+    fprintf(logH,'Iter','Objective','KKT Norm','mu');
+    fprintf('\n');
+end
+%printf(logB,undist(iter),undist(rNorm),undist(rErr),undist(rError1),undist(gNorm),log10(undist(stepG)));
+
+    
 while ( ~ converge ) && (itr < max_itr)
     
     
-    itr = itr + 1;
     [F] = kktSystem(b, Bm, c, C, M, s, q, u, r, w, y, params);
+    
+    if(~params.silent)
+%        fprintf('%d \t %5.3f\t %5.4f\t\t %5.4f\n', itr, params.objFun(y), norm(F, inf), params.mu);
+        fprintf(logB, itr, params.objFun(y), norm(F, inf), params.mu);
+        fprintf('\n');
+    end
+
+    itr = itr + 1;
+
     
     params.useChol = 0;
     [ds, dq, du, dr, dw, dy, params] =  kktSolveNew(b, Bm, c, C, M, s, q, u, r, w, y, params);
@@ -205,10 +223,6 @@ while ( ~ converge ) && (itr < max_itr)
             
     end
     
-    if(~params.silent)
-        fprintf('Iter: %d, norm(F): %f, mu: %f\n', itr, G_new, params.mu);
-    end
-    
     
     if ~ok
         df = max(F - F_new);
@@ -248,5 +262,14 @@ while ( ~ converge ) && (itr < max_itr)
  %   end
  converge = (G1 < epsComp) || (G_new < epsF) || params.mu < epsMu;
 
+ if(converge)
+     if(~params.silent)
+%        fprintf('%d \t %5.3f\t %5.3f\t %f\n', itr, params.objFun(y_new), G_new, params.mu);
+       fprintf(logB, itr, params.objFun(y_new), G_new, params.mu);
+       fprintf('\n\n');
+    end 
+ end
+ 
 end
+
 end

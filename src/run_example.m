@@ -14,15 +14,28 @@ function [ yOut ] = run_example( H, z, measurePLQ, processPLQ, params )
 %    proc: process model, can be 'none'
 %  lambda: tradeoff parameter between process and measurement
 
+
+
+REVISION = '$Rev: 2 $';
+DATE     = '$Date: 2013-07-01 17:41:32 -0700 (Mon, 01 Jul 2013) $';
+REVISION = REVISION(6:end-1);
+DATE     = DATE(35:50);
+
 t_start = tic;
 
 % general algorithm parameteres
+
+if(~isfield(params, 'optTol'))
+   params.optTol = 1e-6; 
+end
+
 if(~isfield(params, 'silent'))
    params.silent = 0; 
 end
 if(~isfield(params, 'constraints'))
    params.constraints = 0; 
 end
+
 
 % controls for process model 
 if(~isfield(params, 'procLinear'))
@@ -116,8 +129,9 @@ if(pFlag)
     par.kappa = params.proc_kappa;
     par.tau = params.proc_tau;
     par.scale = params.proc_scale;
+    par.eps = params.proc_eps;
     
-    [Mw Cw cw bw Bw] = loadPenalty(pLin, k, processPLQ, par);
+    [Mw Cw cw bw Bw pFun] = loadPenalty(pLin, k, processPLQ, par);
 end
 
 % Define measurement PLQ
@@ -130,8 +144,14 @@ par.tau = params.meas_tau;
 par.eps = params.meas_eps;
 par.scale = params.meas_scale;
 
-[Mv Cv cv bv Bv] = loadPenalty(H, z, measurePLQ, par);
+[Mv Cv cv bv Bv mFun] = loadPenalty(H, z, measurePLQ, par);
 
+% define objective function
+if(pFlag)
+   params.objFun = @(x) mFun(H*x - z); 
+else
+   params.objFun = @(x) mFun(H*x - z) + pFun(x);
+end
 
 %%%%%%
 
@@ -168,6 +188,22 @@ else
 end
 
 
+fprintf('\n');
+fprintf(' %s\n',repmat('=',1,80));
+fprintf(' IPsolve  v.%s (%s)\n', REVISION, DATE);
+fprintf(' %s\n',repmat('=',1,80));
+fprintf(' %-22s: %8i %4s'   ,'No. rows'          ,m                 ,'');
+fprintf(' %-22s: %8i\n'     ,'No. columns'       ,n                    );
+fprintf(' %-22s: %8.2e %4s' ,'Optimality tol'    , params.optTol           ,'');
+fprintf(' %-22s: %8.2e\n'   ,'Penalty(b)'        , mFun(z)               );
+fprintf(' %-22s: %8s %4s'   ,'Penalty'  , processPLQ, '    ');
+fprintf(' %-22s: %s\n'     ,'Regularizer'       , measurePLQ);
+fprintf(' %s\n',repmat('=',1,80));
+fprintf('\n');
+
+
+
+
 params.mu = 0;
 
 Fin = kktSystem(b, Bm, c, C, Mv, sIn, qIn, uIn,  rIn, wIn, yIn,params);
@@ -178,7 +214,8 @@ Fout = kktSystem(b, Bm, c, C, Mv, sOut, qOut, uOut, rOut, wOut, yOut, params);
 
 ok = norm(Fout) < 1e-6;
 
-fprintf('In, %f, Final, %f, mu, %f, itr %d\n', norm(Fin), norm(Fout), info.muOut, info.itr);
+fprintf('KKT In, %5.3f, KKT Final, %5.3f, mu, %f, itr %d\n', norm(Fin), norm(Fout), info.muOut, info.itr);
+fprintf('Obj In, %5.3f, Obj Final, %5.3f \n', params.objFun(yIn), params.objFun(yOut));
 
 toc(t_start);
 

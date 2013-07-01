@@ -4,7 +4,7 @@
 % License: Eclipse Public License version 1.0
 % -----------------------------------------------------------------------------
 
-function [ M C c b B ] = loadPenalty( H, z, penalty, params )
+function [ M C c b B fun] = loadPenalty( H, z, penalty, params )
 %loadPENALTY Loads one of several predefined penalties, 
 % for IP solver. 
 
@@ -38,6 +38,9 @@ switch(penalty)
         c    = 1;
         b    = zeros(m, 1);
         B    = speye(m);
+        
+        % function handle to evaluate objective
+        fun = @(x) sum(sqrt(1 + x/scale) - 1);
     
     case 'vapnik'
         lam = params.lambda;
@@ -52,6 +55,9 @@ switch(penalty)
         
         b = -eps*ones(2*m,1);
         B = [speye(m); -speye(m)];
+        
+        % function handle to evaluate objective
+        fun = @(x) sum(lam*pos(x-eps) + lam*pos(-x-eps));
     
     case 'huber'
         kappa = params.kappa;
@@ -62,6 +68,10 @@ switch(penalty)
         b = zeros(m,1);
         B = speye(m);     
         
+        
+        % function handle to evaluate objective
+        fun = @(x) sum((abs(x) > mMult*kappa).*(abs(x) - 0.5*mMult*kappa).*sign(x) + (abs(x) < 0.5*mMult*kappa).*x.^2/(mMult*kappa)); 
+        
     case 'l1'
         lam = params.lambda;
         M = 0*speye(m);
@@ -69,6 +79,10 @@ switch(penalty)
         c = lam*ones(2*m, 1);
         b = zeros(m,1);
         B = speye(m); 
+        
+        % function handle to evaluate objective
+        fun = @(x) lam*norm(x,1);
+        
         
     case 'qreg' % lambda-scaled penalty.
         lam = params.lambda;
@@ -79,6 +93,9 @@ switch(penalty)
 %        c = lam*ones(2*m, 1);
         b = zeros(m,1);
         B = speye(m);   
+        
+        % function handle to evaluate objective
+        fun = @(x) lam*tau*sum(pos(-x)) + lam*(1-tau)*sum(pos(x));
 
     case 'qhuber' % quantile huber penalty.
         tau = params.tau;
@@ -88,6 +105,8 @@ switch(penalty)
         c = [(1-tau)*ones(m,1); tau*ones(m,1)];
         b = zeros(m,1);
         B = speye(m);           
+        
+        fun = @(x) sum((x < -tau*kappa).*(-tau*x - 0.5*kappa*tau^2) + 0.5*x.^2/kappa + (x > (1-tau)*kappa).*((1-tau)*x - 0.5*kappa*(1-tau)^2));
         
     case 'l2func'
         mMult    = params.mMult;
@@ -105,14 +124,20 @@ switch(penalty)
         b    = zeros(m, 1);
         B    = speye(m);
 
-        
+        % function handle to evaluate objective
+        fun = @(x) norm(x)^2/(2*mMult);
         
     case 'hinge'
         M = 0*speye(m);
+        lam = params.lambda;
         C = [speye(m); -speye(m)];
-        c = [ones(m, 1); zeros(m,1)]; % hinge!
+        c = lam*[ones(m, 1); zeros(m,1)]; % hinge!
         b = zeros(m,1);
         B = speye(m);
+        
+        % function handle to evaluate objective
+        fun = @(x) lam*sum(pos(x));
+        
               
     case 'l2m' % penalize everybody except the last element
         M = speye(m);
@@ -120,6 +145,9 @@ switch(penalty)
         c    = zeros(2,1);
         b    = zeros(m, 1);
         B    = speye(m);
+
+        % function handle to evaluate objective
+        fun = @(x) 0.5*norm(x(1:end-1))^2;
         
     case 'l1m'
         lam = params.lambda;
@@ -129,6 +157,8 @@ switch(penalty)
         b = zeros(m,1);
         B = speye(m); 
 
+        % function handle to evaluate objective
+        fun = @(x) lam*norm(x(1:end-1), 1); 
         
     otherwise
         error('unknown PLQ');
@@ -137,6 +167,6 @@ end
   % composing with linear model
         b = b-B*z;
         B = B*H;
-
+                
 end
 
