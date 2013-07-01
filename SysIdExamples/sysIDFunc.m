@@ -5,7 +5,13 @@ L = chol(Q)';
 
 params.pFlag = 1;
 
-g = run_example( H*L/sigma, z, measurePLQ, processPLQ, params );
+explicit = ~(isa(H,'function_handle'));
+if(explicit)
+    g = run_example( H*L/sigma, z, measurePLQ, processPLQ, params );
+else
+    fun = @(x) H(L*x/sigma);
+    g = run_example( fun, z, measurePLQ, processPLQ, params );
+end
 
 fRet = L*g/sigma;
 

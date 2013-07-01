@@ -1,6 +1,5 @@
 
 %clear all
-
 addpath(genpath('../'))
 
 n = 30;
@@ -17,10 +16,11 @@ L = chol(Q)';
 sigma = 2;
 H = randn(m, n);
 
+
 % generate measurements
 z = H*L*xTrue + sigma*randn(m,1);
 
-
+fun = @(x) linearMat(x, H);
 
 % constraint = 'box';
 % boxSize = 1e10;%0.01;
@@ -41,9 +41,12 @@ z = H*L*xTrue + sigma*randn(m,1);
 % end
 
 
+
 params.pFlag = 1;
 params.constraints = 0;
 
+params.m = m;
+params.n = n;
 params.proc_mMult = 0.5;
 params.meas_mMult = 0.5;
 
@@ -59,7 +62,9 @@ par.mMult = 1/par.kappa;
 
 
 %% Vapnik-L2 and test
-fs = sysIDFunc(z,Q,H,sigma, 'vapnik', 'l2', params);
+%fs = sysIDFunc(z,Q,H,sigma, 'vapnik', 'l2', params);
+
+fs = sysIDFunc(z,Q,fun,sigma, 'vapnik', 'l2', params);
 
 cvx_begin 
   variables f(n)

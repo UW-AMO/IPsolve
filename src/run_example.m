@@ -16,6 +16,15 @@ function [ yOut ] = run_example( H, z, measurePLQ, processPLQ, params )
 
 
 
+explicit = ~(isa(H,'function_handle'));
+
+if(explicit)
+    params.relTol = 0;  % solve each subproblem to completion
+else
+    params.relTol = 0.9; % solve each subproblem approximately.
+end
+
+
 REVISION = '$Rev: 2 $';
 DATE     = '$Date: 2013-07-01 17:41:32 -0700 (Mon, 01 Jul 2013) $';
 REVISION = REVISION(6:end-1);
@@ -25,10 +34,13 @@ t_start = tic;
 
 % general algorithm parameteres
 
+
+if(~isfield(params, 'relOpt'))
+   params.relOpt = 0; 
+end
 if(~isfield(params, 'optTol'))
    params.optTol = 1e-6; 
 end
-
 if(~isfield(params, 'silent'))
    params.silent = 0; 
 end
@@ -91,14 +103,17 @@ if(~isfield(params, 'mehrotra'))
 end
 
 
-params.AA = H;
-params.b = z;
 
-m = size(params.AA, 1);
-par.m = m;
-
-n = size(params.AA, 2);
-
+if(explicit)
+    m = size(H, 1);
+    par.m = m;
+    n = size(H, 2);
+else  % if nonlinear, m must be in params. 
+    m = params.m;
+    par.m = m;
+    n = params.n;
+end
+    
 if(params.procLinear)
     params.pSparse = 0; % should be true if K is sparse
     pLin = params.K;
@@ -144,81 +159,199 @@ par.tau = params.meas_tau;
 par.eps = params.meas_eps;
 par.scale = params.meas_scale;
 
-[Mv Cv cv bv Bv mFun] = loadPenalty(H, z, measurePLQ, par);
 
-% define objective function
-if(pFlag)
-   params.objFun = @(x) mFun(H*x - z); 
+if(explicit)
+
+    [Mv Cv cv bv Bv mFun] = loadPenalty(H, z, measurePLQ, par);
+    
+    % define objective function
+    if(pFlag)
+        params.objFun = @(x) mFun(H*x - z);
+    else
+        params.objFun = @(x) mFun(H*x - z) + pFun(x);
+    end
+    
+    %%%%%%
+    
+    K = size(Bv, 1);
+    params.pFlag = pFlag;
+    params.m = m;
+    params.n = n;
+    if(pFlag)
+        [b, c, C] = addPLQ(bv, cv, Cv, bw, cw, Cw);
+        Bm = Bv;
+        params.B2 = Bw;
+        params.M2 = Mw;
+        K = K + size(Bw,1);
+    else
+        b = bv; Bm = Bv; c = cv; C = Cv; M = Mv;
+    end
+    C = C';
+    
+    
+    L = size(C, 2);
+    
+    sIn = 100*ones(L, 1);
+    qIn = 100*ones(L, 1);
+    uIn = zeros(K, 1) + 0.01;
+    yIn   = zeros(n, 1);
+    
+    if(params.constraints)
+        P = size(params.A, 2);
+        rIn = 10*ones(P, 1);
+        wIn = 10*ones(P, 1);
+    else
+        rIn = [];
+        wIn = [];
+    end
+    
+    
+    fprintf('\n');
+    fprintf(' %s\n',repmat('=',1,80));
+    fprintf(' IPsolve  v.%s (%s)\n', REVISION, DATE);
+    fprintf(' %s\n',repmat('=',1,80));
+    fprintf(' %-22s: %8i %4s'   ,'No. rows'          ,m                 ,'');
+    fprintf(' %-22s: %8i\n'     ,'No. columns'       ,n                    );
+    fprintf(' %-22s: %8.2e %4s' ,'Optimality tol'    , params.optTol           ,'');
+    fprintf(' %-22s: %8.2e\n'   ,'Penalty(b)'        , mFun(z)               );
+    fprintf(' %-22s: %8s %4s'   ,'Penalty'  , processPLQ, '    ');
+    fprintf(' %-22s: %s\n'     ,'Regularizer'       , measurePLQ);
+    fprintf(' %s\n',repmat('=',1,80));
+    fprintf('\n');
+    
+    
+    
+    
+    params.mu = 0;
+    
+    Fin = kktSystem(b, Bm, c, C, Mv, sIn, qIn, uIn,  rIn, wIn, yIn,params);
+    
+    [yOut, uOut, qOut, sOut, rOut, wOut, info] = ipSolver(b, Bm, c, C, Mv, sIn, qIn, uIn, rIn, wIn, yIn, params);
+    
+    Fout = kktSystem(b, Bm, c, C, Mv, sOut, qOut, uOut, rOut, wOut, yOut, params);
+    
+    ok = norm(Fout) < 1e-6;
+    
+    fprintf('KKT In, %5.3f, KKT Final, %5.3f, mu, %f, itr %d\n', norm(Fin), norm(Fout), info.muOut, info.itr);
+    fprintf('Obj In, %5.3f, Obj Final, %5.3f \n', params.objFun(yIn), params.objFun(yOut));
+    
+    toc(t_start);
 else
-   params.objFun = @(x) mFun(H*x - z) + pFun(x);
+    % initialize y 
+    y   = zeros(n, 1);
+    converged = 0;
+    fprintf('\n');
+    fprintf(' %s\n',repmat('=',1,80));
+    fprintf(' IPsolve  v.%s (%s)\n', REVISION, DATE);
+    fprintf(' %s\n',repmat('=',1,80));
+    fprintf(' %-22s: %8i %4s'   ,'No. rows'          ,m                 ,'');
+    fprintf(' %-22s: %8i\n'     ,'No. columns'       ,n                    );
+    fprintf(' %-22s: %8.2e %4s' ,'Optimality tol'    , params.optTol           ,'');
+    fprintf(' %\n-22s: %8s %4s'   ,'Penalty'  , processPLQ, '    ');
+    fprintf(' %-22s: %s\n'     ,'Regularizer'       , measurePLQ);
+    fprintf(' %s\n',repmat('=',1,80));
+    fprintf('\n');
+
+    
+    params.silent = 1;
+    logB = ' %5i  %13.7f  %13.7f  %13i %13i';
+    logH = ' %5s  %13s  %13s  %13s %13s \n';
+    fprintf(logH,'Iter','Objective','Delta','LS-iter','inner');
+    fprintf('\n');
+
+    itr = 0;
+    while(~converged)
+        % evaluate z and H
+        [Hy Hex] = H(y); 
+        zex = z - Hy;
+        par.size = m;
+        [Mv Cv cv bv Bv mFun] = loadPenalty(Hex, zex, measurePLQ, par);
+        % define objective function
+        
+
+        K = size(Bv, 1);
+        params.pFlag = pFlag;
+        params.m = m;
+        params.n = n;
+        if(pFlag)
+            [b, c, C] = addPLQ(bv, cv, Cv, bw, cw, Cw);
+            Bm = Bv;
+            params.B2 = Bw;
+            params.M2 = Mw;
+            K = K + size(Bw,1);
+        else
+            b = bv; Bm = Bv; c = cv; C = Cv; M = Mv;
+        end
+        C = C';
+        
+        
+        if(pFlag)
+            params.objFun = @(x) mFun(H(x) - z);
+            params.objLin = @(x) mFun(Hex*x - zex);
+        else
+            params.objFun = @(x) mFun(H(x) - z) + pFun(x);
+            params.objLin = @(x) mFun(Hex*x - zex)+pFun(x + y);
+        end
+
+        
+        L = size(C, 2);
+        
+        sIn = 100*ones(L, 1);
+        qIn = 100*ones(L, 1);
+        uIn = zeros(K, 1) + 0.01;
+        yIn = zeros(n,1);
+        
+        if(params.constraints)
+            P = size(params.A, 2);
+            rIn = 10*ones(P, 1);
+            wIn = 10*ones(P, 1);
+        else
+            rIn = [];
+            wIn = [];
+        end
+    
+        obj_cur = params.objFun(y);
+        [yOut, uOut, qOut, sOut, rOut, wOut, info] = ipSolver(b, Bm, c, C, Mv, sIn, qIn, uIn, rIn, wIn, yIn, params);
+        
+        
+        % line search
+%        dirDer = params.objLin(yOut) - params.objFun(yOut);
+        dirDer = params.objLin(yOut) - obj_cur;
+   %     converged = dirDer > -params.optTol;
+        converged = abs(dirDer) < params.optTol*1e2;
+        
+
+        
+        
+        c = 0.001;
+        gamma = 0.5;
+        lambda = 2.;
+        done = false;
+        search_itr = 0;
+        max_search_itr = 50;
+        
+        while(~done)&&(search_itr < max_search_itr)
+            search_itr = search_itr + 1;
+            lambda = lambda * gamma;
+            
+            y_new = y + lambda * (yOut);
+            obj_lambda = params.objFun(y_new);
+            done = ((obj_lambda - obj_cur) <= c*lambda*dirDer);
+        end
+        
+        if(search_itr == max_search_itr)
+            error('line search did not converge');
+        end
+        
+        fprintf(logB, itr, params.objFun(y_new), dirDer, search_itr, info.itr);
+        fprintf('\n');
+        
+        itr = itr + 1;
+        
+        y = y_new;        
+    end
+    yOut = y_new;
 end
-
-%%%%%%
-
-K = size(Bv, 1);
-params.pFlag = pFlag;
-params.m = m;
-params.n = n;
-if(pFlag)
-    [b, c, C] = addPLQ(bv, cv, Cv, bw, cw, Cw);
-    Bm = Bv;
-    params.B2 = Bw;
-    params.M2 = Mw;
-    K = K + size(Bw,1);
-else
-    b = bv; Bm = Bv; c = cv; C = Cv; M = Mv;
-end
-C = C';
-
-
-L = size(C, 2);
-
-sIn = 100*ones(L, 1);
-qIn = 100*ones(L, 1);
-uIn = zeros(K, 1) + 0.01;
-yIn   = zeros(n, 1);
-
-if(params.constraints)
-    P = size(params.A, 2);
-    rIn = 10*ones(P, 1);
-    wIn = 10*ones(P, 1);
-else
-   rIn = [];
-   wIn = [];
-end
-
-
-fprintf('\n');
-fprintf(' %s\n',repmat('=',1,80));
-fprintf(' IPsolve  v.%s (%s)\n', REVISION, DATE);
-fprintf(' %s\n',repmat('=',1,80));
-fprintf(' %-22s: %8i %4s'   ,'No. rows'          ,m                 ,'');
-fprintf(' %-22s: %8i\n'     ,'No. columns'       ,n                    );
-fprintf(' %-22s: %8.2e %4s' ,'Optimality tol'    , params.optTol           ,'');
-fprintf(' %-22s: %8.2e\n'   ,'Penalty(b)'        , mFun(z)               );
-fprintf(' %-22s: %8s %4s'   ,'Penalty'  , processPLQ, '    ');
-fprintf(' %-22s: %s\n'     ,'Regularizer'       , measurePLQ);
-fprintf(' %s\n',repmat('=',1,80));
-fprintf('\n');
-
-
-
-
-params.mu = 0;
-
-Fin = kktSystem(b, Bm, c, C, Mv, sIn, qIn, uIn,  rIn, wIn, yIn,params);
-
-[yOut, uOut, qOut, sOut, rOut, wOut, info] = ipSolver(b, Bm, c, C, Mv, sIn, qIn, uIn, rIn, wIn, yIn, params);
-
-Fout = kktSystem(b, Bm, c, C, Mv, sOut, qOut, uOut, rOut, wOut, yOut, params);
-
-ok = norm(Fout) < 1e-6;
-
-fprintf('KKT In, %5.3f, KKT Final, %5.3f, mu, %f, itr %d\n', norm(Fin), norm(Fout), info.muOut, info.itr);
-fprintf('Obj In, %5.3f, Obj Final, %5.3f \n', params.objFun(yIn), params.objFun(yOut));
-
-toc(t_start);
-
 
 end
 

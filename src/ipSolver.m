@@ -11,7 +11,9 @@ max_itr = 100;
 gamma   = .01;
 epsilon = 1e-6;
 
+yIn = y;
 
+relOpt = params.relOpt;
 epsComp = params.optTol;
 epsF = params.optTol;
 epsMu = params.optTol;
@@ -29,11 +31,16 @@ if(~params.silent)
 end
 %printf(logB,undist(iter),undist(rNorm),undist(rErr),undist(rError1),undist(gNorm),log10(undist(stepG)));
 
-    
+G_in = 0;    
 while ( ~ converge ) && (itr < max_itr)
     
     
     [F] = kktSystem(b, Bm, c, C, M, s, q, u, r, w, y, params);
+
+    % store norm of initial KKT system
+    if(itr == 1)
+        G_in = norm(F, inf);
+    end
     
     if(~params.silent)
 %        fprintf('%d \t %5.3f\t %5.4f\t\t %5.4f\n', itr, params.objFun(y), norm(F, inf), params.mu);
@@ -260,13 +267,28 @@ while ( ~ converge ) && (itr < max_itr)
         muNew = 0.1*compMuFrac;
         params.mu = muNew;
  %   end
- converge = (G1 < epsComp) || (G_new < epsF) || params.mu < epsMu;
 
+ if(isfield(params, 'objLin'))
+     VP = params.objLin(y);
+     Kxnu = params.objLin(yIn);
+     converged = (compMuFrac < params.relTol*1e-4*(Kxnu - VP));
+%    converged = G_new < 1e-3*G_in;
+ else
+     converged = 0;
+ end
+ converge = converged || (G1 < epsComp) || (G_new < epsF) || params.mu < epsMu || G_new < relOpt*G_in;
+
+	
+ 
  if(converge)
      if(~params.silent)
 %        fprintf('%d \t %5.3f\t %5.3f\t %f\n', itr, params.objFun(y_new), G_new, params.mu);
-       fprintf(logB, itr, params.objFun(y_new), G_new, params.mu);
-       fprintf('\n\n');
+if(isfield(params, 'objLin'))
+    fprintf(logB, itr, params.objLin(y_new), G_new, params.mu);
+else
+    fprintf(logB, itr, params.objFun(y_new), G_new, params.mu);
+end   
+fprintf('\n\n');
     end 
  end
  
