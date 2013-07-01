@@ -260,6 +260,7 @@ else
     fprintf('\n');
 
     itr = 0;
+    tic
     while(~converged)
         % evaluate z and H
         [Hy Hex] = H(y); 
@@ -351,6 +352,7 @@ else
         y = y_new;        
     end
     yOut = y_new;
+    toc
 end
 
 end
