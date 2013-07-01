@@ -12,9 +12,9 @@ gamma   = .01;
 epsilon = 1e-6;
 
 
-epsComp = 1e-5;
-epsF = 1e-5;
-epsMu = 1e-5;
+epsComp = params.optTol;
+epsF = params.optTol;
+epsMu = params.optTol;
 itr = 0;
 
 %initialize mu
