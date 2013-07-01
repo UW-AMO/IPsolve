@@ -21,7 +21,7 @@ explicit = ~(isa(H,'function_handle'));
 if(explicit)
     params.relTol = 0;  % solve each subproblem to completion
 else
-    params.relTol = 0.9; % solve each subproblem approximately.
+    params.relTol = 0.01; % solve each subproblem approximately.
 end
 
 
