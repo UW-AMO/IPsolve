@@ -21,7 +21,7 @@ explicit = ~(isa(H,'function_handle'));
 if(explicit)
     params.relTol = 0;  % solve each subproblem to completion
 else
-    params.relTol = 0.01; % solve each subproblem approximately.
+    params.relTol = 0.1; % solve each subproblem approximately.
 end
 
 
@@ -256,7 +256,7 @@ else
     params.silent = 1;
     logB = ' %5i  %13.7f  %13.7f  %13i %13i';
     logH = ' %5s  %13s  %13s  %13s %13s \n';
-    fprintf(logH,'Iter','Objective','Delta','LS-iter','inner');
+    fprintf(logH,'Iter','Objective','dirDer','LS-iter','inner');
     fprintf('\n');
 
     itr = 0;
@@ -287,11 +287,12 @@ else
         
         
         if(pFlag)
+            params.objFun = @(x) mFun(H(x) - z) + pFun(x);
+            params.objLin = @(x) mFun(Hex*(x) - zex)+pFun(x+y);
+        else
             params.objFun = @(x) mFun(H(x) - z);
             params.objLin = @(x) mFun(Hex*x - zex);
-        else
-            params.objFun = @(x) mFun(H(x) - z) + pFun(x);
-            params.objLin = @(x) mFun(Hex*x - zex)+pFun(x + y);
+            
         end
 
         
@@ -312,6 +313,11 @@ else
         end
     
         obj_cur = params.objFun(y);
+        
+        % debugging lines
+        %obj_cur_affine = params.objLin(0*y);
+        %fprintf('obj_cur: %5.4f, obj_cur_affine: %5.4f\n', obj_cur, obj_cur_affine); 
+       % fprintf('current: %5.4f\n', obj_cur);
         [yOut, uOut, qOut, sOut, rOut, wOut, info] = ipSolver(b, Bm, c, C, Mv, sIn, qIn, uIn, rIn, wIn, yIn, params);
         
         
@@ -338,13 +344,14 @@ else
             y_new = y + lambda * (yOut);
             obj_lambda = params.objFun(y_new);
             done = ((obj_lambda - obj_cur) <= c*lambda*dirDer);
+        %    fprintf('S_itr: %s, Diff: %5.4f, dirDer: %5.4f\n', obj_lambda - obj_cur, dirDer);
         end
         
         if(search_itr == max_search_itr)
             error('line search did not converge');
         end
         
-        fprintf(logB, itr, params.objFun(y_new), dirDer, search_itr, info.itr);
+        fprintf(logB, itr, obj_lambda, dirDer, search_itr, info.itr);
         fprintf('\n');
         
         itr = itr + 1;
