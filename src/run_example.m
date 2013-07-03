@@ -166,9 +166,9 @@ if(explicit)
     
     % define objective function
     if(pFlag)
-        params.objFun = @(x) mFun(H*x - z);
-    else
         params.objFun = @(x) mFun(H*x - z) + pFun(x);
+    else
+        params.objFun = @(x) mFun(H*x - z);
     end
     
     %%%%%%

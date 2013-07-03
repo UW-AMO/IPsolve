@@ -6,6 +6,7 @@
 
 function [ds, dq, du, dr, dw, dy, params] = kktSolveNew(b, Bm, c, C, Mfun, s, q, u, r, w, y, params)
 
+
 useChol = params.useChol;
 pSparse = params.pSparse;
 pFlag = params.pFlag;
@@ -133,6 +134,8 @@ else
         end
     end   
     dy      = OmegaChol\(OmegaChol'\r6);
+    %dy = Omega\r6;
+%    [dy, ~] = lsqr(Omega, r6, [], 5);
 end
 
 % compute dw and dr
