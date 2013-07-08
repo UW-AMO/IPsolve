@@ -15,6 +15,7 @@ function [ yOut ] = run_example( H, z, measurePLQ, processPLQ, params )
 %  lambda: tradeoff parameter between process and measurement
 
 
+maxItNonlin = 100;
 
 explicit = ~(isa(H,'function_handle'));
 
@@ -242,7 +243,7 @@ if(explicit)
 else
     % initialize y 
     y   = zeros(n, 1);
-%    y = randn(n,1);
+ %   y = randn(n,1);
     converged = 0;
     fprintf('\n');
     fprintf(' %s\n',repmat('=',1,80));
@@ -268,7 +269,7 @@ else
     
     itr = 0;
     tic
-    while(~converged)
+    while(~converged)&&itr <= maxItNonlin
         % evaluate z and H
         [Hy Hex] = H(y); 
         zex = z - Hy;
@@ -296,7 +297,7 @@ else
         
         if(pFlag)
             params.objFun = @(x) mFun(H(x) - z) + pFun(x);
-            params.objLin = @(x) mFun(Hex*(x) - zex)+pFun(x-y);
+            params.objLin = @(x) mFun(Hex*(x) - zex)+pFun(x+y);
         else
             params.objFun = @(x) mFun(H(x) - z);
             params.objLin = @(x) mFun(Hex*x - zex);
@@ -338,7 +339,7 @@ else
 %        dirDer = params.objLin(yOut) - params.objFun(yOut);
         dirDer = params.objLin(yOut) - obj_cur;
    %     converged = dirDer > -params.optTol;
-        converged = abs(dirDer) < params.optTol*1e2; %|| norm(F, inf) < 1e-4;
+        converged = dirDer > -params.optTol*1e2; %|| norm(F, inf) < 1e-4;
         
 % 
 %         if(converged)
@@ -359,9 +360,8 @@ else
         gamma = 0.5;
         lambda = 2.;
         done = false;
-        search_itr = 0;
         max_search_itr = 50;
-        
+        search_itr = 0;
         while(~done)&&(search_itr < max_search_itr)
             search_itr = search_itr + 1;
             lambda = lambda * gamma;
@@ -373,12 +373,14 @@ else
         end
         
         if(search_itr == max_search_itr)
+            
             fprintf('Norm of F: %5.4f\n', norm(F, inf));
-            if(converged)
-                break
-            else
-                error('line search did not converge');
-            end
+            break
+%             if(converged)
+%                 break
+%             else
+%                 error('line search did not converge');
+%             end
         end
         
         fprintf(logB, itr, obj_lambda, dirDer, search_itr, info.itr);
