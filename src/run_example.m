@@ -338,18 +338,22 @@ else
 %        dirDer = params.objLin(yOut) - params.objFun(yOut);
         dirDer = params.objLin(yOut) - obj_cur;
    %     converged = dirDer > -params.optTol;
-        converged = abs(dirDer) < params.optTol*1e2 || norm(F, inf) < 1e-4;
+        converged = abs(dirDer) < params.optTol*1e2; %|| norm(F, inf) < 1e-4;
         
-
-        if(converged)
-            if(itr ==0)
-                y_new = yOut;
-                obj_lambda = params.objFun(y_new);
-                fprintf(logB, itr, obj_lambda, dirDer, 0, info.itr);
-                fprintf('\n');
-            end
-            break;
-        end
+% 
+%         if(converged)
+%             y_new = yOut;
+% %             if(abs(dirDer) < params.optTol*1e2)
+% %                 y_new = yOut;
+% %                 obj_lambda = params.objFun(y_new);
+% %             else
+% %                 y_new = yIn;
+% %                 obj_lambda = params.objFun(y_new);
+% %             end
+% %             fprintf(logB, itr, obj_lambda, dirDer, 0, info.itr);
+% %             fprintf('\n');
+%             break;
+%         end
         
         c = 0.001;
         gamma = 0.5;
@@ -370,7 +374,11 @@ else
         
         if(search_itr == max_search_itr)
             fprintf('Norm of F: %5.4f\n', norm(F, inf));
-            error('line search did not converge');
+            if(converged)
+                break
+            else
+                error('line search did not converge');
+            end
         end
         
         fprintf(logB, itr, obj_lambda, dirDer, search_itr, info.itr);
