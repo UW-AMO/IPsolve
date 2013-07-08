@@ -338,15 +338,16 @@ else
 %        dirDer = params.objLin(yOut) - params.objFun(yOut);
         dirDer = params.objLin(yOut) - obj_cur;
    %     converged = dirDer > -params.optTol;
-        converged = abs(dirDer) < params.optTol*1e2 || norm(F, inf) < params.optTol*1e2;
+        converged = abs(dirDer) < params.optTol*1e2 || norm(F, inf) < 1e-4;
         
 
         if(converged)
-            
-            y_new = yOut;
-            obj_lambda = params.objFun(y_new);
-            fprintf(logB, itr, obj_lambda, dirDer, 0, info.itr);
-            fprintf('\n');
+            if(itr ==0)
+                y_new = yOut;
+                obj_lambda = params.objFun(y_new);
+                fprintf(logB, itr, obj_lambda, dirDer, 0, info.itr);
+                fprintf('\n');
+            end
             break;
         end
         
