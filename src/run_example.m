@@ -139,30 +139,31 @@ end
 
 
 if(pFlag)
-    par.mMult = params.proc_mMult;
-    par.lambda = params.proc_lambda;
-    par.kappa = params.proc_kappa;
-    par.tau = params.proc_tau;
-    par.scale = params.proc_scale;
-    par.eps = params.proc_eps;
+    par_proc.size = n;
+    par_proc.mMult = params.proc_mMult;
+    par_proc.lambda = params.proc_lambda;
+    par_proc.kappa = params.proc_kappa;
+    par_proc.tau = params.proc_tau;
+    par_proc.scale = params.proc_scale;
+    par_proc.eps = params.proc_eps;
     
-    [Mw Cw cw bw Bw pFun] = loadPenalty(pLin, k, processPLQ, par);
+    [Mw Cw cw bw Bw pFun] = loadPenalty(pLin, k, processPLQ, par_proc);
 end
 
 % Define measurement PLQ
 
-par.size = m;
-par.mMult = params.meas_mMult;
-par.lambda = params.meas_lambda;
-par.kappa = params.meas_kappa;
-par.tau = params.meas_tau;
-par.eps = params.meas_eps;
-par.scale = params.meas_scale;
+par_meas.size = m;
+par_meas.mMult = params.meas_mMult;
+par_meas.lambda = params.meas_lambda;
+par_meas.kappa = params.meas_kappa;
+par_meas.tau = params.meas_tau;
+par_meas.eps = params.meas_eps;
+par_meas.scale = params.meas_scale;
 
 
 if(explicit)
 
-    [Mv Cv cv bv Bv mFun] = loadPenalty(H, z, measurePLQ, par);
+    [Mv Cv cv bv Bv mFun] = loadPenalty(H, z, measurePLQ, par_meas);
     
     % define objective function
     if(pFlag)
@@ -194,7 +195,9 @@ if(explicit)
     sIn = 100*ones(L, 1);
     qIn = 100*ones(L, 1);
     uIn = zeros(K, 1) + 0.01;
+   
     yIn   = zeros(n, 1);
+   
     
     if(params.constraints)
         P = size(params.A, 2);
@@ -239,6 +242,7 @@ if(explicit)
 else
     % initialize y 
     y   = zeros(n, 1);
+%    y = randn(n,1);
     converged = 0;
     fprintf('\n');
     fprintf(' %s\n',repmat('=',1,80));
@@ -259,15 +263,18 @@ else
     fprintf(logH,'Iter','Objective','dirDer','LS-iter','inner');
     fprintf('\n');
 
+    
+    
+    
     itr = 0;
     tic
     while(~converged)
         % evaluate z and H
         [Hy Hex] = H(y); 
         zex = z - Hy;
-        par.size = m;
-        [Mv Cv cv bv Bv mFun] = loadPenalty(Hex, zex, measurePLQ, par);
+        [Mv Cv cv bv Bv mFun] = loadPenalty(Hex, zex, measurePLQ, par_meas);
         % define objective function
+        
         
 
         K = size(Bv, 1);
@@ -275,6 +282,7 @@ else
         params.m = m;
         params.n = n;
         if(pFlag)
+            [Mw Cw cw bw Bw pFun] = loadPenalty(pLin, y, processPLQ, par_proc);
             [b, c, C] = addPLQ(bv, cv, Cv, bw, cw, Cw);
             Bm = Bv;
             params.B2 = Bw;
@@ -288,7 +296,7 @@ else
         
         if(pFlag)
             params.objFun = @(x) mFun(H(x) - z) + pFun(x);
-            params.objLin = @(x) mFun(Hex*(x) - zex)+pFun(x+y);
+            params.objLin = @(x) mFun(Hex*(x) - zex)+pFun(x-y);
         else
             params.objFun = @(x) mFun(H(x) - z);
             params.objLin = @(x) mFun(Hex*x - zex);
@@ -314,18 +322,23 @@ else
     
         obj_cur = params.objFun(y);
         
+        
+        
         % debugging lines
-        %obj_cur_affine = params.objLin(0*y);
-        %fprintf('obj_cur: %5.4f, obj_cur_affine: %5.4f\n', obj_cur, obj_cur_affine); 
+       % obj_cur_affine = params.objLin(0*y);
+       % fprintf('obj_cur: %5.4f, obj_cur_affine: %5.4f\n', obj_cur, obj_cur_affine); 
        % fprintf('current: %5.4f\n', obj_cur);
         [yOut, uOut, qOut, sOut, rOut, wOut, info] = ipSolver(b, Bm, c, C, Mv, sIn, qIn, uIn, rIn, wIn, yIn, params);
         
+        params.mu = 0;
+        F = kktSystem(b, Bm, c, C, Mv, sOut, qOut, uOut, rOut, wOut, yOut, params);
+
         
         % line search
 %        dirDer = params.objLin(yOut) - params.objFun(yOut);
         dirDer = params.objLin(yOut) - obj_cur;
    %     converged = dirDer > -params.optTol;
-        converged = abs(dirDer) < params.optTol*1e2;
+        converged = abs(dirDer) < params.optTol*1e2 || norm(F, inf) < params.optTol;
         
 
         
@@ -335,7 +348,7 @@ else
         lambda = 2.;
         done = false;
         search_itr = 0;
-        max_search_itr = 50;
+        max_search_itr = 30;
         
         while(~done)&&(search_itr < max_search_itr)
             search_itr = search_itr + 1;

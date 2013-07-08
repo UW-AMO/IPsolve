@@ -110,8 +110,8 @@ while ( ~ converge ) && (itr < max_itr)
     %
     ok        = 0;
     kount     = 0;
-    max_kount = 10;
-    beta = 0.5;
+    max_kount = 20;
+    beta = 0.2;
     lambda = lambda/beta;
     while (~ok) && (kount < max_kount)
         kount  = kount + 1;
@@ -158,6 +158,14 @@ while ( ~ converge ) && (itr < max_itr)
         G_new = max(abs(F_new));
         
         ok   = (G_new <= (1 - gamma *lambda) * G);
+    end
+    
+     if ~ok
+        df = max(F - F_new);
+        if(df <= epsilon)
+            return
+        end
+        error('ipSolver: line search failed');
     end
     
     % if using mehrotra extension 
@@ -231,13 +239,7 @@ while ( ~ converge ) && (itr < max_itr)
     end
     
     
-    if ~ok
-        df = max(F - F_new);
-        if(df <= epsilon)
-            return
-        end
-        error('ipSolver: line search failed');
-    end
+   
     %F    = F_new;
     %
     s = s_new; sOut = s;
