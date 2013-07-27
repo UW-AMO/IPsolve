@@ -1,7 +1,9 @@
 %clear all;
 
-example = 'studentPL';
+example = 'vapnik';
 
+params.relOpt = 0;
+params.optTol = 1e-6; 
 
 switch(example)
     case{'vapnik'}
