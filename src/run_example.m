@@ -34,19 +34,20 @@ DATE     = DATE(35:50);
 t_start = tic;
 
 % general algorithm parameteres
-
-
 if(~isfield(params, 'relOpt'))
    params.relOpt = 0; 
 end
 if(~isfield(params, 'optTol'))
-   params.optTol = 1e-6; 
+   params.optTol = 1e-7; 
 end
 if(~isfield(params, 'silent'))
    params.silent = 0; 
 end
 if(~isfield(params, 'constraints'))
    params.constraints = 0; 
+end
+if(~isfield(params, 'inexact'))
+   params.inexact = 0; 
 end
 
 

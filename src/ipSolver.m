@@ -17,6 +17,9 @@ relOpt = params.relOpt;
 epsComp = params.optTol;
 epsF = params.optTol;
 epsMu = params.optTol;
+
+inexact = params.inexact;
+
 itr = 0;
 
 %initialize mu
@@ -161,10 +164,10 @@ while ( ~ converge ) && (itr < max_itr)
     end
     
      if ~ok
-        df = max(F - F_new);
-        if(df <= epsilon)
-            return
-        end
+         %df = max(F - F_new);
+         %if(df <= epsilon)
+         %   return
+         %end
         error('ipSolver: line search failed');
     end
     

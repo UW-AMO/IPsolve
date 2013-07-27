@@ -6,6 +6,8 @@
 
 function [ds, dq, du, dr, dw, dy, params] = kktSolveNew(b, Bm, c, C, Mfun, s, q, u, r, w, y, params)
 
+    
+inexact = params.inexact;    
 
 useChol = params.useChol;
 pSparse = params.pSparse;
@@ -105,17 +107,39 @@ end
 if pFlag && n >= m && pSparse
     BTB = Bn'*(Tn\Bn) + SpOmegaMod; % large sparse matrix
     
-    if(useChol)
-        TBABchol = params.chol;
-    else
-        TBAB = Tm + Bm*(BTB\Bm'); % small dense matrix
-        TBABchol = chol(TBAB);
-        params.chol = TBABchol;
-    end
+    %    if(useChol)
+    %     TBABchol = params.chol;
+    %else
+    TBAB = Tm + Bm*(BTB\Bm'); % small dense matrix
+                                  %        TBABchol = chol(TBAB);
+                                  %params.chol = TBABchol;
+                                  %end
 %    Air4 = TBABchol\(TBABchol'\r6);
     Air4 = BTB\r6;
-    dy = Air4 - BTB\((Bm'*(TBABchol\(TBABchol'\(Bm*Air4)))));
-else
+    %    dy = Air4 - BTB\((Bm'*(TBABchol\(TBABchol'\(Bm*Air4)))));
+
+    if(inexact)
+        Mexp = sparse(diag(diag(TBAB)));
+        Mexp = inv(Mexp);
+        %        Mexp = inv(Mexp);
+        %v =  sparse(diag(diag(BTB)))*Bm';
+        %Mimp = Tm + sparse(diag(v.*v));
+        %disp(norm(Mexp - Mimp))
+        % not quite right
+        
+        r = Bm*Air4;
+        [u, ~] = pcg(TBAB, r,  1e-14, [], [], []);
+        % u = pcg(TBAB, r); 
+        % u = TBAB\(Bm*Air4);
+    else
+        %        dy = Air4 -
+        %        BTB\((Bm'*(TBABchol\(TBABchol'\(Bm*Air4)))));
+        r = Bm*Air4;
+        u = TBAB\r;
+    end
+    dy = Air4 - BTB\(Bm'*u);
+
+   else
     if(pFlag)
         if(useChol)
             OmegaChol = params.chol;
