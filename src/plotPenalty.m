@@ -7,7 +7,16 @@ function [ ok ] = plotPenalty( plq, params )
 %                lambda(quantile, l1)
 %                kappa (huber, quantile huber).
 
-H = 1;
+
+% these should later be added to the automated parameter
+% checking code. 
+params.relOpt = 1e-5;
+params.optTol = 1e-5;
+params.inexact = 0; 
+params.mehrotra = 0; 
+
+
+H = -1;
 z = 0;
 switch(plq)
     case{'vapnik'}
@@ -102,4 +111,3 @@ hold off;
 ok = 1;
 
 end
-

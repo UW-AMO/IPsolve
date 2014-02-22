@@ -5,7 +5,7 @@
 % -----------------------------------------------------------------------------
 
 
-function [ yOut ] = run_example( H, z, measurePLQ, processPLQ, params )
+function [ yOut normFout] = run_example( H, z, measurePLQ, processPLQ, params )
 %RUN_EXAMPLE Runs simple examples for ADMM comparison
 %   Input:
 %       H: linear model
@@ -52,6 +52,11 @@ end
 
 
 % controls for process model 
+
+if(~isfield(params, 'dictionary')) % specific to dictionary learning
+    params.dictionary = 0;
+end
+
 if(~isfield(params, 'procLinear'))
     params.procLinear = 0;
 end
@@ -131,7 +136,6 @@ else
 end
 
 
-
 % Define process PLQ
 pFlag = 1;
 if(isempty(processPLQ))
@@ -152,6 +156,19 @@ if(pFlag)
     [Mw Cw cw bw Bw pFun] = loadPenalty(pLin, k, processPLQ, par_proc);
 end
 
+% Load dictionary
+if(pFlag && params.dictionary)
+    par_proc.mMult = params.dict_mMult;
+
+    par_proc.lambda = params.proc_lambda;
+    par_proc.kappa = params.proc_kappa;
+    par_proc.tau = params.proc_tau;
+    par_proc.scale = params.proc_scale;
+    par_proc.eps = params.proc_eps;
+    [Md Cd cd bd Bd dFun] = loadPenalty(speye(n), params.dict_vec, 'l2', par_proc);
+end
+
+
 % Define measurement PLQ
 
 par_meas.size = m;
@@ -168,11 +185,14 @@ if(explicit)
     [Mv Cv cv bv Bv mFun] = loadPenalty(H, z, measurePLQ, par_meas);
     
     % define objective function
-    if(pFlag)
-        params.objFun = @(x) mFun(H*x - z) + pFun(x);
+    if(pFlag && params.dictionary)
+        params.objFun = @(x) mFun(z - H*x) + pFun(x) + dFun(x + params.dict_vec);
+    elseif(pFlag)
+        params.objFun = @(x) mFun(z - H*x) + pFun(x);
     else
-        params.objFun = @(x) mFun(H*x - z);
+        params.objFun = @(x) mFun(z - H*x);
     end
+    
     
     %%%%%%
     
@@ -181,6 +201,10 @@ if(explicit)
     params.m = m;
     params.n = n;
     if(pFlag)
+        if(params.dictionary)
+            [bw, Bw, cw, Cw, Mw] = addPLQFull(bd, Bd, cd, Cd, Md, bw, Bw, cw, Cw, Mw);
+        end
+            
         [b, c, C] = addPLQ(bv, cv, Cv, bw, cw, Cw);
         Bm = Bv;
         params.B2 = Bw;
@@ -236,6 +260,7 @@ if(explicit)
     Fout = kktSystem(b, Bm, c, C, Mv, sOut, qOut, uOut, rOut, wOut, yOut, params);
     
     ok = norm(Fout) < 1e-6;
+    normFout = norm(Fout); % Added by NRK
     
     fprintf('KKT In, %5.3f, KKT Final, %5.3f, mu, %f, itr %d\n', norm(Fin), norm(Fout), info.muOut, info.itr);
     fprintf('Obj In, %5.3f, Obj Final, %5.3f \n', params.objFun(yIn), params.objFun(yOut));
@@ -396,4 +421,3 @@ else
 end
 
 end
-

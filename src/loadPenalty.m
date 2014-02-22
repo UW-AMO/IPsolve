@@ -40,7 +40,7 @@ switch(penalty)
         B    = speye(m);
         
         % function handle to evaluate objective
-        fun = @(x) sum(sqrt(1 + x/scale) - 1);
+        fun = @(x) sum(sqrt(1 + x.^2/scale) - 1);
     
     case 'vapnik'
         lam = params.lambda;
@@ -101,12 +101,15 @@ switch(penalty)
         tau = params.tau;
         kappa = params.kappa;
         M = kappa*speye(m);
-        C = [speye(m); -speye(m)];
+        
+        C = 0.5*[speye(m); -speye(m)];
         c = [(1-tau)*ones(m,1); tau*ones(m,1)];
         b = zeros(m,1);
         B = speye(m);           
         
-        fun = @(x) sum((x < -tau*kappa).*(-tau*x - 0.5*kappa*tau^2) + 0.5*x.^2/kappa + (x > (1-tau)*kappa).*((1-tau)*x - 0.5*kappa*(1-tau)^2));
+%        fun = @(x) sum((x < -tau*kappa).*(-2*tau*x - kappa*tau^2) + x.^2/kappa + (x > (1-tau)*kappa).*(2*(1-tau)*x - kappa*(1-tau)^2));
+        fun = @(x)qhubers(x, kappa, tau);
+%sum(2*tau*abs(x(left)) - 2*thresh*tau^2)
         
     case 'l2func'
         mMult    = params.mMult;
@@ -165,8 +168,10 @@ switch(penalty)
 end
 
   % composing with linear model
-        b = b-B*z;
-        B = B*H;
+        %b = b-B*z; 
+         b = -b+B*z;
+        %B = B*H; 
+        B = -B*H;
                 
 end
 
