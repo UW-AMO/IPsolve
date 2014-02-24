@@ -235,20 +235,21 @@ if(explicit)
     end
     
     
-    fprintf('\n');
-    fprintf(' %s\n',repmat('=',1,80));
-    fprintf(' IPsolve  v.%s (%s)\n', REVISION, DATE);
-    fprintf(' %s\n',repmat('=',1,80));
-    fprintf(' %-22s: %8i %4s'   ,'No. rows'          ,m                 ,'');
-    fprintf(' %-22s: %8i\n'     ,'No. columns'       ,n                    );
-    fprintf(' %-22s: %8.2e %4s' ,'Optimality tol'    , params.optTol           ,'');
-    fprintf(' %-22s: %8.2e\n'   ,'Penalty(b)'        , mFun(z)               );
-    fprintf(' %-22s: %8s %4s'   ,'Penalty'  , processPLQ, '    ');
-    fprintf(' %-22s: %s\n'     ,'Regularizer'       , measurePLQ);
-    fprintf(' %s\n',repmat('=',1,80));
-    fprintf('\n');
-    
-    
+    if(~params.silent)
+        fprintf('\n');
+        fprintf(' %s\n',repmat('=',1,80));
+        fprintf(' IPsolve  v.%s (%s)\n', REVISION, DATE);
+        fprintf(' %s\n',repmat('=',1,80));
+        fprintf(' %-22s: %8i %4s'   ,'No. rows'          ,m                 ,'');
+        fprintf(' %-22s: %8i\n'     ,'No. columns'       ,n                    );
+        fprintf(' %-22s: %8.2e %4s' ,'Optimality tol'    , params.optTol           ,'');
+        fprintf(' %-22s: %8.2e\n'   ,'Penalty(b)'        , mFun(z)               );
+        fprintf(' %-22s: %8s %4s'   ,'Penalty'  , processPLQ, '    ');
+        fprintf(' %-22s: %s\n'     ,'Regularizer'       , measurePLQ);
+        fprintf(' %s\n',repmat('=',1,80));
+        fprintf('\n');
+        
+    end
     
     
     params.mu = 0;
@@ -262,10 +263,13 @@ if(explicit)
     ok = norm(Fout) < 1e-6;
     normFout = norm(Fout); % Added by NRK
     
-    fprintf('KKT In, %5.3f, KKT Final, %5.3f, mu, %f, itr %d\n', norm(Fin), norm(Fout), info.muOut, info.itr);
-    fprintf('Obj In, %5.3f, Obj Final, %5.3f \n', params.objFun(yIn), params.objFun(yOut));
-    
-    toc(t_start);
+    if(~params.silent)
+        fprintf('KKT In, %5.3f, KKT Final, %5.3f, mu, %f, itr %d\n', norm(Fin), norm(Fout), info.muOut, info.itr);
+        fprintf('Obj In, %5.3f, Obj Final, %5.3f \n', params.objFun(yIn), params.objFun(yOut));
+        
+        
+        toc(t_start);
+    end
 else
     % initialize y 
     y   = zeros(n, 1);
