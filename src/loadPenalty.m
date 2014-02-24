@@ -41,6 +41,9 @@ switch(penalty)
         
         % function handle to evaluate objective
         fun = @(x) sum(sqrt(1 + x.^2/scale) - 1);
+        
+        % function handle for gradients, in case this is needed elsewhere
+        params.gfun = @(x) x./sqrt(1 + x.^2/scale);
     
     case 'vapnik'
         lam = params.lambda;
@@ -58,6 +61,8 @@ switch(penalty)
         
         % function handle to evaluate objective
         fun = @(x) sum(lam*pos(x-eps) + lam*pos(-x-eps));
+        
+        
     
     case 'huber'
         kappa = params.kappa;
@@ -71,6 +76,9 @@ switch(penalty)
         
         % function handle to evaluate objective
         fun = @(x) sum((abs(x) > mMult*kappa).*(abs(x) - 0.5*mMult*kappa).*sign(x) + (abs(x) < 0.5*mMult*kappa).*x.^2/(mMult*kappa)); 
+        
+        % function handle for gradients, in case this is needed elsewhere
+        params.gfun = @(x) (abs(x) > mMult*kappa).*sign(x) + 2*(abs(x) <= 0.5*mMult*kappa).*x/(mMult*kappa);
         
     case 'l1'
         lam = params.lambda;
