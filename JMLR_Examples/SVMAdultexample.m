@@ -15,7 +15,7 @@ A =[ Y.*x y];
 
 lambda = 1.0;
 
-
+params.inexact = 1;
 [xADMM history] = linear_svm(A, lambda, 1.0, 1.0);
 
 wADMM = xADMM(1:end-2);
@@ -23,7 +23,7 @@ bADMM = xADMM(end);
 
 params.procLinear = 0;
 params.meas_lambda = lambda;
-[xIP] = run_example(-A, -ones(m,1), 'hinge', 'l2m', params);
+[xIP] = run_example(A, ones(m,1), 'hinge', 'l2m', params);
 
 
 [yTest, xTest] = libsvmread('./adult/a9a.t');

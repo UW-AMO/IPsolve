@@ -20,10 +20,12 @@ epsMu = params.optTol;
 
 inexact = params.inexact;
 
+% cg interior parameter
+params.tolqual = 1e-4;
 itr = 0;
 
 %initialize mu
-params.mu = 100;
+params.mu = 10;
 
 
 if(~params.silent)
@@ -35,6 +37,7 @@ end
 %printf(logB,undist(iter),undist(rNorm),undist(rErr),undist(rError1),undist(gNorm),log10(undist(stepG)));
 
 G_in = 0;    
+
 while ( ~ converge ) && (itr < max_itr)
     
     
@@ -54,7 +57,13 @@ while ( ~ converge ) && (itr < max_itr)
     itr = itr + 1;
 
     
+    % dominique pcg tolerance suggestion
     params.useChol = 0;
+    params.tolqual = min(params.tolqual, norm(F, 2)/100);
+    params.tolqual = max(params.tolqual, 1e-9);
+%    fprintf('params.tolqual is %5.8f\n', params.tolqual);
+
+    
     [ds, dq, du, dr, dw, dy, params] =  kktSolveNew(b, Bm, c, C, M, s, q, u, r, w, y, params);
 %    [ds, dq, du, dr, dw, dy] =  kktSolve(b, Bm, c, C, M, s, q, u, r, w, y, params);
     if(any(isnan([ds; dq; du; dr; dw; dy])))
@@ -163,11 +172,13 @@ while ( ~ converge ) && (itr < max_itr)
         ok   = (G_new <= (1 - gamma *lambda) * G);
     end
     
+    % SASHA: note tweak for failed line search. 
      if ~ok
-         %df = max(F - F_new);
-         %if(df <= epsilon)
-         %   return
-         %end
+         fprintf('Line search failed, returning\n');
+         df = max(F - F_new);
+         if(df <= epsilon)
+            return
+         end
         error('ipSolver: line search failed');
     end
     
@@ -281,7 +292,7 @@ while ( ~ converge ) && (itr < max_itr)
  else
      converged = 0;
  end
- converge = converged || (G1 < epsComp) || (G_new < epsF) || params.mu < epsMu || G_new < relOpt*G_in;
+ converge = converged || (G1 < epsComp) || (G_new < epsF) || params.mu < epsMu|| G_new < relOpt*G_in;
 
 	
  

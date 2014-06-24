@@ -106,58 +106,47 @@ end
 % compute dy
 if pFlag && n >= m && pSparse
     BTB = Bn'*(Tn\Bn) + SpOmegaMod; % large sparse matrix
-    
-    %    if(useChol)
-    %     TBABchol = params.chol;
-    %else
-    TBAB = Tm + Bm*(BTB\Bm'); % small dense matrix
-                                  %        TBABchol = chol(TBAB);
-                                  %params.chol = TBABchol;
-                                  %end
-%    Air4 = TBABchol\(TBABchol'\r6);
-    Air4 = BTB\r6;
-    %    dy = Air4 - BTB\((Bm'*(TBABchol\(TBABchol'\(Bm*Air4)))));
 
-    if(inexact)
-        Mexp = sparse(diag(diag(TBAB)));
-        Mexp = inv(Mexp);
-        %        Mexp = inv(Mexp);
-        %v =  sparse(diag(diag(BTB)))*Bm';
-        %Mimp = Tm + sparse(diag(v.*v));
-        %disp(norm(Mexp - Mimp))
-        % not quite right
-        
-        r = Bm*Air4;
-        [u, ~] = pcg(TBAB, r,  1e-14, [], [], []);
-        % u = pcg(TBAB, r); 
-        % u = TBAB\(Bm*Air4);
-    else
-        %        dy = Air4 -
-        %        BTB\((Bm'*(TBABchol\(TBABchol'\(Bm*Air4)))));
-        r = Bm*Air4;
-        u = TBAB\r;
-    end
+    Air4 = BTB\r6;
+    r = Bm*Air4;
+    
+% indirect (working) version
+if(inexact)
+    
+    TBAB = @(x) Tm*x + Bm*(BTB\(Bm'*x));
+    [u] = pcg(TBAB, r, params.tolqual, 10000);
+
+    % direct working version
+else
+    TBAB = Tm + Bm*(BTB\Bm'); 
+    u = TBAB\r;
+end
+
     dy = Air4 - BTB\(Bm'*u);
 
-   else
+
+else
     if(pFlag)
-        if(useChol)
-            OmegaChol = params.chol;
-        else            
+        if(inexact)
+            BTB = Bn'*(Tn\Bn) + SpOmegaMod;
+            Omega   =  @(x) BTB*x + Bm'*(Tm\(Bm*x));
+            [dy] = pcg(Omega, r6, params.tolqual, 10000);
+        else
             Omega   =  Bn'*(Tn\Bn)+ Bm'*(Tm\Bm) + SpOmegaMod;
             OmegaChol = chol(Omega);
-            params.chol = OmegaChol;
+            dy      = OmegaChol\(OmegaChol'\r6);
         end
     else
-        if(useChol)
-            OmegaChol = params.chol;
+        if(inexact)
+            Omega   =  @(x) SpOmegaMod*x + Bm*(T\(Bm'*x));
+            [dy] = pcg(Omega, r6, params.tolqual, 10000);
         else
             Omega   = Bm'*(T\Bm) + SpOmegaMod;
             OmegaChol = chol(Omega);
-            params.chol = OmegaChol;
+            dy      = OmegaChol\(OmegaChol'\r6);
         end
-    end   
-    dy      = OmegaChol\(OmegaChol'\r6);
+    end
+    
     %dy = Omega\r6;
 %    [dy, ~] = lsqr(Omega, r6, [], 5);
 end

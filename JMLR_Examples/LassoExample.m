@@ -26,6 +26,7 @@ params.procLinear = 0;
 
 params.proc_lambda = lambda;
 params.silent = 0;
+params.inexact = 1;
 [xIP] = run_example(A, b, 'l2', 'l1', params);
 %Reporting
 
