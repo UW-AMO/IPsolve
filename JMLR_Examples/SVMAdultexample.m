@@ -15,8 +15,8 @@ A =[ Y.*x y];
 
 lambda = 1.0;
 
-params.inexact = 1;
-[xADMM history] = linear_svm(A, lambda, 1.0, 1.0);
+params.inexact = 0;
+%[xADMM history] = linear_svm(A, lambda, 1.0, 1.0);
 
 wADMM = xADMM(1:end-2);
 bADMM = xADMM(end);

@@ -30,6 +30,8 @@ params.inexact = 1;
 [xIP] = run_example(A, b, 'l2', 'l1', params);
 %Reporting
 
+kappa = cond(A)
+
 accu = 0.5*norm(A*xADMM - b)^2 + lambda*norm(xADMM,1) - ...
 0.5*norm(A*xIP - b)^2 - lambda*norm(xIP,1)  
 

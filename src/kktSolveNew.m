@@ -6,8 +6,8 @@
 
 function [ds, dq, du, dr, dw, dy, params] = kktSolveNew(b, Bm, c, C, Mfun, s, q, u, r, w, y, params)
 
-    
-inexact = params.inexact;    
+
+inexact = params.inexact;
 
 useChol = params.useChol;
 pSparse = params.pSparse;
@@ -27,18 +27,18 @@ Q = speye(length(q));
 Q = spdiags(q, 0, Q);
 
 if(pCon)
-   WR = speye(length(w));
-   WR = spdiags(w./r, 0, WR);
-   W =  speye(length(w));
-   W = spdiags(w, 0, W);
+    WR = speye(length(w));
+    WR = spdiags(w./r, 0, WR);
+    W =  speye(length(w));
+    W = spdiags(w, 0, W);
 end
 
 if(pFlag)
-   MMn = params.M2;
-   um = u(1:m);
-   un = u(m+1:end);
+    MMn = params.M2;
+    um = u(1:m);
+    un = u(m+1:end);
 else
-   um = u;    
+    um = u;
 end
 
 if(funM)
@@ -49,14 +49,14 @@ else
 end
 
 if(pFlag)
-   Mu = [Mum; MMn*un];  
+    Mu = [Mum; MMn*un];
 else
     Mu = Mum;
 end
 
 if(pFlag)
     MM = [MMm, 0*speye(size(MMm,1), size(MMn,2));
-    0*speye(size(MMn,1), size(MMm,2)) MMn];
+        0*speye(size(MMn,1), size(MMm,2)) MMn];
 else
     MM = MMm;
 end
@@ -104,32 +104,41 @@ end
 
 
 % compute dy
-if pFlag && n >= m && pSparse
+if pFlag && n > m && pSparse &&~inexact
     BTB = Bn'*(Tn\Bn) + SpOmegaMod; % large sparse matrix
-
+    
     Air4 = BTB\r6;
     r = Bm*Air4;
     
-% indirect (working) version
-if(inexact)
+    % indirect (working) version
+    if(inexact)
+        
+        TBAB = @(x) Tm*x + Bm*(BTB\(Bm'*x));
+        
+        %maxElt = max(diag(BTB));
+        %precon = diag(max(maxElt*ones(m,1), diag(Tm)));
+        
+        [u] = pcg(TBAB, r, params.tolqual, 10000);
+        
+        % direct working version
+    else
+        TBAB = Tm + Bm*(BTB\Bm');
+        u = TBAB\r;
+    end
     
-    TBAB = @(x) Tm*x + Bm*(BTB\(Bm'*x));
-    [u] = pcg(TBAB, r, params.tolqual, 10000);
-
-    % direct working version
-else
-    TBAB = Tm + Bm*(BTB\Bm'); 
-    u = TBAB\r;
-end
-
     dy = Air4 - BTB\(Bm'*u);
-
-
+    
+    
 else
     if(pFlag)
         if(inexact)
             BTB = Bn'*(Tn\Bn) + SpOmegaMod;
             Omega   =  @(x) BTB*x + Bm'*(Tm\(Bm*x));
+            dTn = diag(Tn);
+            elt = max(max(dTn(1:m), diag(Tm)));
+            eltTwo = max(max(diag(Tn)), max(diag(Tm)));
+            precon = (1/eltTwo)*(Bn)'*Bn;
+            
             [dy] = pcg(Omega, r6, params.tolqual, 10000);
         else
             Omega   =  Bn'*(Tn\Bn)+ Bm'*(Tm\Bm) + SpOmegaMod;
@@ -148,7 +157,7 @@ else
     end
     
     %dy = Omega\r6;
-%    [dy, ~] = lsqr(Omega, r6, [], 5);
+    %    [dy, ~] = lsqr(Omega, r6, [], 5);
 end
 
 % compute dw and dr
