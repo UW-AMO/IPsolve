@@ -88,7 +88,7 @@ if(pCon)
     r4      = -(r + A'*y - a);
     r5      = mu + (A'*y - a).*w;
     Awr5r = A*(w + (r5./r));
-    SpOmegaMod =  A*WR*A';
+%    SpOmegaMod =  A*WR*A';
 else
     Awr5r = 0;
     SpOmegaMod = 0*speye(n);
@@ -132,7 +132,7 @@ if pFlag && n > m && pSparse &&~inexact
 else
     if(pFlag)
         if(inexact)
-            BTB = Bn'*(Tn\Bn) + SpOmegaMod;
+            BTB = Bn'*(Tn\Bn) + A*WR*A';
             Omega   =  @(x) BTB*x + Bm'*(Tm\(Bm*x));
             dTn = diag(Tn);
             elt = max(max(dTn(1:m), diag(Tm)));
@@ -147,10 +147,10 @@ else
         end
     else
         if(inexact)
-            Omega   =  @(x) SpOmegaMod*x + Bm*(T\(Bm'*x));
+            Omega   =  @(x) A*(WR*(A'*x)) + Bm*(T\(Bm'*x));
             [dy] = pcg(Omega, r6, params.tolqual, 10000);
         else
-            Omega   = Bm'*(T\Bm) + SpOmegaMod;
+            Omega   = Bm'*(T\Bm) + A*WR*A';
             OmegaChol = chol(Omega);
             dy      = OmegaChol\(OmegaChol'\r6);
         end
@@ -162,7 +162,7 @@ end
 
 % compute dw and dr
 if(pCon)
-    dw      = (r5 + W*params.A'*dy)./r;
+    dw      = (r5 + W*(params.A'*dy))./r;
     dr      = r4 - params.A'*dy;
 else
     dw = [];

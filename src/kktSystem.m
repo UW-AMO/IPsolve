@@ -64,7 +64,7 @@ end
 
 
 if(pCon)
-    Aw = params.A*w;
+    Aw = params.A*w; 
     r4 = r + params.A'*y - params.a;
     r5 = w.*r - mu;
 else

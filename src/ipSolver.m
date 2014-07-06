@@ -61,7 +61,7 @@ while ( ~ converge ) && (itr < max_itr)
     params.useChol = 0;
     params.tolqual = min(params.tolqual, norm(F, 2)/100);
     params.tolqual = max(params.tolqual, 1e-9);
-    fprintf('params.tolqual is %5.8f\n', params.tolqual);
+%    fprintf('params.tolqual is %5.8f\n', params.tolqual);
 
     
     [ds, dq, du, dr, dw, dy, params] =  kktSolveNew(b, Bm, c, C, M, s, q, u, r, w, y, params);

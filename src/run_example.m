@@ -218,8 +218,8 @@ if(explicit)
     
     L = size(C, 2);
     
-    sIn = 100*ones(L, 1);
-    qIn = 100*ones(L, 1);
+    sIn = 1*ones(L, 1);
+    qIn = 1*ones(L, 1);
     uIn = zeros(K, 1) + 0.01;
    
     yIn   = zeros(n, 1);
@@ -227,8 +227,8 @@ if(explicit)
     
     if(params.constraints)
         P = size(params.A, 2);
-        rIn = 10*ones(P, 1);
-        wIn = 10*ones(P, 1);
+        rIn = 1*ones(P, 1);
+        wIn = 1*ones(P, 1);
     else
         rIn = [];
         wIn = [];
