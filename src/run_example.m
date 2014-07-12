@@ -35,10 +35,10 @@ t_start = tic;
 
 % general algorithm parameteres
 if(~isfield(params, 'relOpt'))
-   params.relOpt = 0; 
+   params.relOpt = 1e-5; 
 end
 if(~isfield(params, 'optTol'))
-   params.optTol = 1e-7; 
+   params.optTol = 1e-5; 
 end
 if(~isfield(params, 'silent'))
    params.silent = 0; 
@@ -78,6 +78,15 @@ end
 if(~isfield(params, 'proc_tau'))
     params.proc_tau = 1;
 end
+
+if(~isfield(params,'rho'))
+    params.rho = 0;
+end
+if(~isfield(params, 'delta'))
+    params.delta = 0;
+end
+
+
 
 % control for measurement model
 if(~isfield(params, 'meas_scale'))
@@ -218,17 +227,17 @@ if(explicit)
     
     L = size(C, 2);
     
-    sIn = 1*ones(L, 1);
-    qIn = 1*ones(L, 1);
+    sIn = 10*ones(L, 1);
+    qIn = 10*ones(L, 1);
     uIn = zeros(K, 1) + 0.01;
    
-    yIn   = zeros(n, 1);
+    yIn   = ones(n, 1);
    
     
     if(params.constraints)
         P = size(params.A, 2);
-        rIn = 1*ones(P, 1);
-        wIn = 1*ones(P, 1);
+        rIn = 10*ones(P, 1);
+        wIn = 10*ones(P, 1);
     else
         rIn = [];
         wIn = [];

@@ -64,8 +64,51 @@ while ( ~ converge ) && (itr < max_itr)
 %    fprintf('params.tolqual is %5.8f\n', params.tolqual);
 
     
-    [ds, dq, du, dr, dw, dy, params] =  kktSolveNew(b, Bm, c, C, M, s, q, u, r, w, y, params);
-%    [ds, dq, du, dr, dw, dy] =  kktSolve(b, Bm, c, C, M, s, q, u, r, w, y, params);
+   
+    
+
+   
+% DEBUG complicated
+%    fullMat = [M C Bm; ...
+%            C' -diag(s./q) zeros(length(s), size(Bm,2)); ...
+%            Bm' zeros(size(Bm,2), length(q)) -0*eye(size(Bm,2))];
+%    
+%    rhs1 = -Bm*y + M*u +C*q - b;
+%    rhs2 = C'*u -c - params.mu./q;
+%    rhs3 = Bm'*u;
+%    rhsEx = [rhs1; rhs2; rhs3];
+% 
+%    ansVec = fullMat\rhsEx;
+%    fprintf('accuracy of inexact solution: %7.1e\n', norm(ansVec - [-du; -dq; dy]));
+% 
+%    z = ansVec - [-du; -dq; dy];
+%    n1 = length(u);
+%    n2 = length(q);
+%    norm(z(1:n1))
+%    norm(z(n1+1:n1+n2))
+%    norm(z(n1+n2+1:end))
+
+% DEBUG simple
+%[dsa, dqa, dua, dra, dwa, dya, params] =  kktSolveNew(b, Bm, c, C, M, s, q, u, r, w, y, params);
+
+%   fprintf('ds: %7.1e, dq: %7.1e, du: %7.1e, dr: %7.1e, dw: %7.1e, dy: %7.1e\n', norm(dsa-ds,inf), norm(dqa-dq,inf), norm(dua-du,inf), norm(dra-dr,inf),  norm(dwa-dw,inf), norm(dya-dy,inf));
+    
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% KKT Solvers
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% One: full solve
+%[ds, dq, du, dr, dw, dy] =  kktSolve(b, Bm, c, C, M, s, q, u, r, w, y, params);
+
+% Two: pcg on schur complement:
+%[ds, dq, du, dr, dw, dy] =  kktSolveNew(b, Bm, c, C, M, s, q, u, r, w, y, params);
+
+% Three: minres on new system:
+[ds, dq, du, dr, dw, dy, params] =  kktSolveAction(b, Bm, c, C, M, s, q, u, r, w, y, params);
+
+%%
+
     if(any(isnan([ds; dq; du; dr; dw; dy])))
         error('Nans in IPsolve');
     end
@@ -123,7 +166,7 @@ while ( ~ converge ) && (itr < max_itr)
     ok        = 0;
     kount     = 0;
     max_kount = 20;
-    beta = 0.2;
+    beta = 0.1;
     lambda = lambda/beta;
     while (~ok) && (kount < max_kount)
         kount  = kount + 1;
@@ -171,6 +214,8 @@ while ( ~ converge ) && (itr < max_itr)
         
         ok   = (G_new <= (1 - gamma *lambda) * G);
     end
+    
+    fprintf('number of line searches: %d\n', kount);
     
     % SASHA: note tweak for failed line search. 
      if ~ok

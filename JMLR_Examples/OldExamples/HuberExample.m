@@ -18,7 +18,10 @@ b = b + 10*sprand(m,1,200/m);      % add sparse, large noise
 
 [xADMM] = huber_fit(A, b, 1, 1.0);
 
-[xIP] = run_example(A, b, 'huber', [], []);
+params.inexact = 1;
+params.rho = 1e-5;
+params.delta = 1e-5;
+[xIP] = run_example(A, b, 'huber', [], params);
 
 fprintf('Solution norm difference: %f\n', norm(xIP - xADMM)); 
 

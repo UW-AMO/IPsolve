@@ -3,7 +3,7 @@
 
 
 %Generate problem data
-
+clear params
 randn('seed', 0);
 rand('seed',0);
 
@@ -27,6 +27,8 @@ params.procLinear = 0;
 params.proc_lambda = lambda;
 params.silent = 0;
 params.inexact = 1;
+params.rho = 1e-3;
+params.delta = 1e-3;
 [xIP] = run_example(A, b, 'l2', 'l1', params);
 %Reporting
 

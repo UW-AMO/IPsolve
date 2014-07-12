@@ -31,6 +31,8 @@ if(pCon)
     WR = spdiags(w./r, 0, WR);
     W =  speye(length(w));
     W = spdiags(w, 0, W);
+else
+    WR = 0;
 end
 
 if(pFlag)
@@ -55,8 +57,8 @@ else
 end
 
 if(pFlag)
-    MM = [MMm, 0*speye(size(MMm,1), size(MMn,2));
-        0*speye(size(MMn,1), size(MMm,2)) MMn];
+    MM = [MMm + params.rho*speye(size(MMm)), 0*speye(size(MMm,1), size(MMn,2));
+        0*speye(size(MMn,1), size(MMm,2)) MMn + params.rho*speye(size(MMn))];
 else
     MM = MMm;
 end
@@ -90,6 +92,7 @@ if(pCon)
     Awr5r = A*(w + (r5./r));
 %    SpOmegaMod =  A*WR*A';
 else
+    A = 0;
     Awr5r = 0;
     SpOmegaMod = 0*speye(n);
 end
@@ -113,7 +116,7 @@ if pFlag && n > m && pSparse &&~inexact
     % indirect (working) version
     if(inexact)
         
-        TBAB = @(x) Tm*x + Bm*(BTB\(Bm'*x));
+        TBAB = @(x) Tm*x + Bm*(BTB\(Bm'*x)) + x*params.delta;
         
         %maxElt = max(diag(BTB));
         %precon = diag(max(maxElt*ones(m,1), diag(Tm)));
@@ -133,7 +136,7 @@ else
     if(pFlag)
         if(inexact)
             BTB = Bn'*(Tn\Bn) + A*WR*A';
-            Omega   =  @(x) BTB*x + Bm'*(Tm\(Bm*x));
+            Omega   =  @(x) BTB*x + Bm'*(Tm\(Bm*x)) + params.delta*x;
             dTn = diag(Tn);
             elt = max(max(dTn(1:m), diag(Tm)));
             eltTwo = max(max(diag(Tn)), max(diag(Tm)));
@@ -147,7 +150,7 @@ else
         end
     else
         if(inexact)
-            Omega   =  @(x) A*(WR*(A'*x)) + Bm*(T\(Bm'*x));
+            Omega   =  @(x) A*(WR*(A'*x)) + Bm'*(T\(Bm*x)) + params.delta*x;
             [dy] = pcg(Omega, r6, params.tolqual, 10000);
         else
             Omega   = Bm'*(T\Bm) + A*WR*A';
