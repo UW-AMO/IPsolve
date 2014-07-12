@@ -21,7 +21,7 @@ epsMu = params.optTol;
 inexact = params.inexact;
 
 % cg interior parameter
-params.tolqual = 1e-5;
+params.tolqual = 1e-4;
 itr = 0;
 
 %initialize mu
@@ -102,10 +102,10 @@ while ( ~ converge ) && (itr < max_itr)
 %[ds, dq, du, dr, dw, dy] =  kktSolve(b, Bm, c, C, M, s, q, u, r, w, y, params);
 
 % Two: pcg on schur complement:
-%[ds, dq, du, dr, dw, dy] =  kktSolveNew(b, Bm, c, C, M, s, q, u, r, w, y, params);
+[ds, dq, du, dr, dw, dy] =  kktSolveNew(b, Bm, c, C, M, s, q, u, r, w, y, params);
 
 % Three: minres on new system:
-[ds, dq, du, dr, dw, dy, params] =  kktSolveAction(b, Bm, c, C, M, s, q, u, r, w, y, params);
+%[ds, dq, du, dr, dw, dy, params] =  kktSolveAction(b, Bm, c, C, M, s, q, u, r, w, y, params);
 
 %%
 

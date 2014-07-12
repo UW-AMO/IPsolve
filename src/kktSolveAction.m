@@ -9,18 +9,21 @@ function [ds, dq, du, dr, dw, dy, params] = kktSolveAction(b, Bm, c, C, Mfun, s,
 
 pCon = params.constraints;
 mu = params.mu;
-rho = params.rho;
-delta = params.delta;
 
 % First, set up RHS
 rhs = kktRHS(b, Bm, c, C, Mfun, s, q, u, r, w, y, params);
 
+
 % Second, set up action
 multAction = @(x)kktAction(x, Bm, C, Mfun, s, q, r, w, params);
 
-%trash = multAction(rhs);
-% third, solve using pcg
+
+%mat = kktPrecond(Bm, Mfun, s, q, r, w, params);
+
+
 [vecAns] = minres(multAction, rhs, params.tolqual, 10000);
+%[vecAns] = symmlq(multAction, rhs, params.tolqual, 10000,mat);
+
 
 % extract everybody. 
 sizeu = size(C,1); % messed this dimension up 
