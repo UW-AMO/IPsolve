@@ -174,7 +174,7 @@ if(pFlag && params.dictionary)
     par_proc.tau = params.proc_tau;
     par_proc.scale = params.proc_scale;
     par_proc.eps = params.proc_eps;
-    [Md Cd cd bd Bd dFun] = loadPenalty(speye(n), params.dict_vec, 'l2', par_proc);
+    [Md Cd cd bd Bd dFun] = loadPenalty(speye(n), params.dict_vec, params.dict_pen, par_proc);
 end
 
 

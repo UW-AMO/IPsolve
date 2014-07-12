@@ -216,8 +216,9 @@ while ( ~ converge ) && (itr < max_itr)
         ok   = (G_new <= (1 - gamma *lambda) * G);
     end
     
-    fprintf('number of line searches: %d\n', kount);
-    
+    if(~params.silent)
+        fprintf('number of line searches: %d\n', kount);
+    end    
     % SASHA: note tweak for failed line search. 
      if ~ok
          fprintf('Line search failed, returning\n');
