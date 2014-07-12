@@ -156,10 +156,10 @@ else
 
 
             
-            preCon = @(x) x/delta - Bm'*((Tm + (params.Anorm^2/delta)*speye(size(Tm)))\(Bm*x))/delta^2;
-            [dy] = pcg(Omega, r6, params.tolqual, 10000, preCon);
+%            preCon = @(x) x/delta - Bm'*((Tm + (params.Anorm^2/delta)*speye(size(Tm)))\(Bm*x))/delta^2;
+%            [dy] = pcg(Omega, r6, params.tolqual, 10000, preCon);
 
-          %  [dy] = pcg(Omega, r6, params.tolqual, 10000);
+            [dy] = pcg(Omega, r6, params.tolqual, 10000);
 
             
 

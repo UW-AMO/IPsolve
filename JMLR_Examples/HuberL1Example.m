@@ -45,11 +45,11 @@ lambda = 0.1*lambda_max;
 
 %Solve problem
 
-% if(smooth)
-%     [xADMM history] = huberl1smooth(A, b, lambda, 1.0, 1.0);
-% else
-%     [xADMM history] = huberl1(A, b, lambda, 1.0, 1.0);
-% end
+ if(smooth)
+     [xADMM history] = huberl1smooth(A, b, lambda, 1.0, 1.0);
+ else
+     [xADMM history] = huberl1(A, b, lambda, 1.0, 1.0);
+ end
 
 params.proc_lambda = lambda;
 params.meas_kappa = 1;

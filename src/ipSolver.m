@@ -105,6 +105,7 @@ while ( ~ converge ) && (itr < max_itr)
 [ds, dq, du, dr, dw, dy] =  kktSolveNew(b, Bm, c, C, M, s, q, u, r, w, y, params);
 
 % Three: minres on new system:
+
 %[ds, dq, du, dr, dw, dy, params] =  kktSolveAction(b, Bm, c, C, M, s, q, u, r, w, y, params);
 
 %%

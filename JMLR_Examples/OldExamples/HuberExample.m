@@ -15,7 +15,7 @@ b = A*x0 + sqrt(0.01)*randn(m,1);
 b = b + 10*sprand(m,1,200/m);      % add sparse, large noise
 
 
-
+Anorm = normest(A);
 
 %Solve problem
 params.Anorm = Anorm + 0.5;

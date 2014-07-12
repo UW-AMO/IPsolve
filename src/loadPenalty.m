@@ -31,6 +31,20 @@ switch(penalty)
         B    = speye(m);
 
     
+    case 'logreg'
+        %        scale    = params.scale;
+        M    = @(x,mode)logRegFunc(x,mode);
+        M    = opFunction(m, m, M); 
+        C    = zeros(1,m); % easy to satisfy 0'*u <= 1
+        c    = 1;
+        %         C = [speye(m); -speye(m)];
+        %         c = [ones(m, 1); zeros(m,1)]; %
+        b = zeros(m,1);
+        B = speye(m);
+        
+        fun = @(x) sum(log(1+exp(x)));
+
+        
     case 'hybrid'
         scale    = params.scale;
         M    = @(x)hybridFunc(x, scale);
