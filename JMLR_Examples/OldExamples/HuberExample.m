@@ -1,11 +1,12 @@
 % Huber function fitting example
 %Generate problem data
 
+clear params;
 randn('seed', 0);
 rand('seed',0);
 
 m = 5000;       % number of examples
-n = 300;        % number of features
+n = 1000;        % number of features
 
 x0 = randn(n,1);
 A = randn(m,n);
@@ -14,7 +15,12 @@ b = A*x0 + sqrt(0.01)*randn(m,1);
 b = b + 10*sprand(m,1,200/m);      % add sparse, large noise
 
 
+
+
 %Solve problem
+params.Anorm = Anorm + 0.5;
+
+
 
 [xADMM] = huber_fit(A, b, 1, 1.0);
 

@@ -19,10 +19,10 @@ multAction = @(x)kktAction(x, Bm, C, Mfun, s, q, r, w, params);
 
 
 %mat = kktPrecond(Bm, Mfun, s, q, r, w, params);
-
+%matInv = mat\speye(size(mat));
 
 [vecAns] = minres(multAction, rhs, params.tolqual, 10000);
-%[vecAns] = symmlq(multAction, rhs, params.tolqual, 10000,mat);
+%[vecAns] = symmlq(multAction, rhs, params.tolqual, 10000,matInv);
 
 
 % extract everybody. 
@@ -32,7 +32,7 @@ du = -vecAns(1:sizeu);
 if(pCon)
     sizew = length(w);
     dw = -vecAns(sizeu+1:sizeu+sizew);
-    dr = -r + (mu - r*dw)./w;
+    dr = -r + (mu - r.*dw)./w;
 else
     sizew = 0;
     dw = [];

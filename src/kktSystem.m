@@ -64,8 +64,17 @@ end
 
 
 if(pCon)
-    Aw = params.A*w; 
-    r4 = r + params.A'*y - params.a;
+    if(isa(params.A, 'function_handle'))
+        Aw = params.A(w,1);
+    else
+        Aw = params.A*w;
+    end
+    if(isa(params.A, 'function_handle'))
+        Aty = params.A(y, 2);
+    else
+        Aty = params.A'*y;
+    end
+    r4 = r + Aty - params.a;
     r5 = w.*r - mu;
 else
     Aw = 0;

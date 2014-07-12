@@ -17,7 +17,7 @@ wellCond = 0;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-m = 1000;       % number of examples
+m = 2000;       % number of examples
 n = 2000;       % number of features
 
 p = 100/n;      % sparsity density

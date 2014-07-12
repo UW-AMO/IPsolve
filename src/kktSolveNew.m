@@ -9,7 +9,10 @@ function [ds, dq, du, dr, dw, dy, params] = kktSolveNew(b, Bm, c, C, Mfun, s, q,
 
 inexact = params.inexact;
 
-useChol = params.useChol;
+delta = params.delta;
+
+
+%useChol = params.useChol;
 pSparse = params.pSparse;
 pFlag = params.pFlag;
 pCon = params.constraints;
@@ -142,7 +145,30 @@ else
             eltTwo = max(max(diag(Tn)), max(diag(Tm)));
             precon = (1/eltTwo)*(Bn)'*Bn;
             
-            [dy] = pcg(Omega, r6, params.tolqual, 10000);
+%            mat1 = (Tm + (params.Anorm^2/delta)*speye(size(Tm)));
+ %           mat2 = Tn + 1*speye(size(Tn)); 
+%            mat = blkdiag((Tm + (params.Anorm^2/delta)*speye(size(Tm))), Tn + 1*speye(size(Tn)));
+            
+%            mat3 = BTB + speye(size(BTB))/delta;
+
+%            preCon = @(x) mat3\x - Bm'*(mat1\(Bm*x))/delta^2- Bn'*(mat2\(Bn*x))/delta^2;
+%            preCon = @(x) x/delta - [Bm' Bn']*(mat\([Bm*x; Bn*x]))/delta^2;
+
+
+            
+            preCon = @(x) x/delta - Bm'*((Tm + (params.Anorm^2/delta)*speye(size(Tm)))\(Bm*x))/delta^2;
+            [dy] = pcg(Omega, r6, params.tolqual, 10000, preCon);
+
+          %  [dy] = pcg(Omega, r6, params.tolqual, 10000);
+
+            
+
+%            [dy] = pcg(Omega, r6, params.tolqual, 10000);
+
+            
+%            preCon = @(x) x/delta - Bm'*(Tm\(Bm*x));
+
+            
         else
             Omega   =  Bn'*(Tn\Bn)+ Bm'*(Tm\Bm) + SpOmegaMod;
             OmegaChol = chol(Omega);
@@ -150,8 +176,14 @@ else
         end
     else
         if(inexact)
-            Omega   =  @(x) A*(WR*(A'*x)) + Bm'*(T\(Bm*x)) + params.delta*x;
+            Omega   =  @(x) A*(WR*(A'*x)) + Bm'*(T\(Bm*x)) + delta*x;
+
+      %      preCon = @(x) x/delta - Bm'*((T + (params.Anorm^2/delta)*speye(size(T)))\(Bm*x))/delta^2;
+      %      [dy] = pcg(Omega, r6, params.tolqual, 10000, preCon);
+            
+            
             [dy] = pcg(Omega, r6, params.tolqual, 10000);
+            
         else
             Omega   = Bm'*(T\Bm) + A*WR*A';
             OmegaChol = chol(Omega);

@@ -21,11 +21,11 @@ epsMu = params.optTol;
 inexact = params.inexact;
 
 % cg interior parameter
-params.tolqual = 1e-4;
+params.tolqual = 1e-5;
 itr = 0;
 
 %initialize mu
-params.mu = 10;
+params.mu = 1;
 
 
 if(~params.silent)
@@ -166,7 +166,7 @@ while ( ~ converge ) && (itr < max_itr)
     ok        = 0;
     kount     = 0;
     max_kount = 20;
-    beta = 0.1;
+    beta = 0.2;
     lambda = lambda/beta;
     while (~ok) && (kount < max_kount)
         kount  = kount + 1;

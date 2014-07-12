@@ -19,6 +19,10 @@ b = A*x0 + sqrt(0.001)*randn(m,1);
 lambda_max = norm( A'*b, 'inf' );
 lambda = 0.1*lambda_max;
 
+Anorm = normest(A);
+
+params.Anorm = Anorm*1.1;
+
 %Solve problem
 [xADMM history] = lasso(A, b, lambda, 1.0, 1.0);
 
@@ -27,8 +31,9 @@ params.procLinear = 0;
 params.proc_lambda = lambda;
 params.silent = 0;
 params.inexact = 1;
-params.rho = 1e-3;
-params.delta = 1e-3;
+
+%params.rho = 1e-3;
+params.delta = 1e-5;
 [xIP] = run_example(A, b, 'l2', 'l1', params);
 %Reporting
 
