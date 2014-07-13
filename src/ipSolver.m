@@ -21,7 +21,7 @@ epsMu = params.optTol;
 inexact = params.inexact;
 
 % cg interior parameter
-params.tolqual = 1e-5;
+params.tolqual = 1e-6;
 itr = 0;
 
 %initialize mu

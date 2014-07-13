@@ -60,8 +60,8 @@ else
 end
 
 if(pFlag)
-    MM = [MMm + params.rho*speye(size(MMm)), 0*speye(size(MMm,1), size(MMn,2));
-        0*speye(size(MMn,1), size(MMm,2)) MMn + params.rho*speye(size(MMn))];
+    MM = [MMm + params.rho*speye(size(MMm)), sparse(size(MMm,1), size(MMn,2));
+        sparse(size(MMn,1), size(MMm,2)) MMn + params.rho*speye(size(MMn))];
 else
     MM = MMm;
 end
@@ -138,7 +138,11 @@ if pFlag && n > m && pSparse &&~inexact
 else
     if(pFlag)
         if(inexact)
-            BTB = Bn'*(Tn\Bn) + A*WR*A';
+            if(pCon)
+                BTB = Bn'*(Tn\Bn) + A*WR*A' + delta*speye(size(Bn,2));
+            else
+                BTB = Bn'*(Tn\Bn) + delta*speye(size(Bn,2));
+            end
             Omega   =  @(x) BTB*x + Bm'*(Tm\(Bm*x)) + params.delta*x;
  %           dTn = diag(Tn);
 %            elt = max(max(dTn(1:m), diag(Tm)));
@@ -170,7 +174,7 @@ else
 
             
         else
-            Omega   =  Bn'*(Tn\Bn)+ Bm'*(Tm\Bm) + SpOmegaMod;
+            Omega   =  Bn'*(Tn\Bn)+ Bm'*(Tm\Bm) + A*WR*A'+delta*speye(size(Bm,2));
             OmegaChol = chol(Omega);
             dy      = OmegaChol\(OmegaChol'\r6);
         end
@@ -185,7 +189,12 @@ else
             [dy] = pcg(Omega, r6, params.tolqual, 10000);
             
         else
-            Omega   = Bm'*(T\Bm) + A*WR*A';
+            if(pCon)
+                Omega   = Bm'*(T\Bm) + A*WR*A' + delta*speye(size(Bm,2));
+            else
+                Omega   = Bm'*(T\Bm) + delta*speye(size(Bm,2));
+            end
+            %dy = Omega\r6;
             OmegaChol = chol(Omega);
             dy      = OmegaChol\(OmegaChol'\r6);
         end
