@@ -140,10 +140,10 @@ else
         if(inexact)
             BTB = Bn'*(Tn\Bn) + A*WR*A';
             Omega   =  @(x) BTB*x + Bm'*(Tm\(Bm*x)) + params.delta*x;
-            dTn = diag(Tn);
-            elt = max(max(dTn(1:m), diag(Tm)));
-            eltTwo = max(max(diag(Tn)), max(diag(Tm)));
-            precon = (1/eltTwo)*(Bn)'*Bn;
+ %           dTn = diag(Tn);
+%            elt = max(max(dTn(1:m), diag(Tm)));
+%            eltTwo = max(max(diag(Tn)), max(diag(Tm)));
+%            precon = (1/eltTwo)*(Bn)'*Bn;
             
 %            mat1 = (Tm + (params.Anorm^2/delta)*speye(size(Tm)));
  %           mat2 = Tn + 1*speye(size(Tn)); 
