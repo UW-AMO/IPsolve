@@ -74,7 +74,7 @@ params.uMin = 0; %
  
  params.inexact = 1;
  params.proc_lambda = 1e1;
- params.proc_mMult = 1;
+ params.proc_mMult = 1e-1;
  params.rho = 0;
  params.delta = 0;
 [xIP] = run_example(Xlab, 0*y, 'logreg', 'l2', params);

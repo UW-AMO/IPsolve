@@ -14,12 +14,14 @@ switch(penalty)
 
     case 'studentPL'
         scale    = params.scale;
-        kappa = params.kappa;
+%        kappa = params.kappa;
         C = [speye(m); -speye(m)];
-        c = kappa*ones(2*m, 1);
+        c = scale^2*ones(2*m, 1);
         M    = @(x)studentFunc(x, scale);
         b    = zeros(m, 1);
         B    = speye(m);
+        fun  = @(x)sum(log(1+((x./scale).^2)));
+%        fun = @(x)sum(1-log(2)-sqrt(1-(x./scale).^2) + log(1+sqrt(1-(x./scale).^2)));
 
     
     case 'student'
@@ -48,8 +50,11 @@ switch(penalty)
     case 'hybrid'
         scale    = params.scale;
         M    = @(x)hybridFunc(x, scale);
-        C    = zeros(1,m); % easy to satisfy 0'*u <= 1
-        c    = 1;
+%         C    = zeros(1,m); % easy to satisfy 0'*u <= 1
+%         c    = 1;
+        C = [speye(m); -speye(m)];
+        c = scale^2*ones(2*m, 1); %
+
         b    = zeros(m, 1);
         B    = speye(m);
         
@@ -57,7 +62,7 @@ switch(penalty)
         fun = @(x) sum(sqrt(1 + x.^2/scale) - 1);
         
         % function handle for gradients, in case this is needed elsewhere
-        params.gfun = @(x) x./sqrt(1 + x.^2/scale);
+%        params.gfun = @(x) x./sqrt(1 + x.^2/scale);
     
     case 'vapnik'
         lam = params.lambda;

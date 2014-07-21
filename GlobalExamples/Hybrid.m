@@ -1,6 +1,6 @@
 % Written by Aleksandr Aravkin (saravkin at us dot ibm dot com)
 % L1-regularized Huber example. 
-%clear all;
+clear all;
 %Generate problem data
 randn('seed', 0);
 rand('seed',0);
@@ -34,10 +34,10 @@ params.procLinear = 0;
 
 
 params.meas_kappa = 1;
-params.uConstraints = 1;
+%params.uConstraints = 1;
 params.meas_scale = 2;
-params.uMax = params.meas_scale;
-params.uMin = -params.meas_scale;
+% params.uMax = params.meas_scale;
+% params.uMin = -params.meas_scale;
 
 
 boxSize = 2;

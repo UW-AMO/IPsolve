@@ -6,14 +6,6 @@ randn('seed', 0);
 rand('seed',0);
 
 
-% choose which ADMM program to run; whether to 
-% to use smooth version (1, runs huberl1smooth) 
-% or nonsmooth (2, runs huberl1)
-smooth = 0;
-
-% Choose whether the problem is well conditioned (1) or ill-conditioned (0)
-wellCond = 1;
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -25,7 +17,7 @@ p = 1;      % sparsity density
 x0 = rand(n, 1);
 A = randn(m,n);
 
-b = A*x0 + sqrt(0.001)*randn(m,1);
+b = A*x0 + sqrt(0.01)*randn(m,1);
 error = 1*sprand(m,1,0.1);
 b = b + error;     % add sparse, large noise
 
@@ -55,8 +47,9 @@ params.meas_kappa = 1;
 prm.df = params.meas_scale;
 prm.b = b;
 prm.A = A;
+prm.dim = 2;
 mFun = @(x)students(x, prm);
-xMF = minFunc(mFun, zeros(n,1));
+xMF = minFunc(mFun, zeros(n,1), []);
 
 
 fprintf('Our objective: %5.3f, minFunc objective: %5.3f\n', mFun(xIP), mFun(xMF));
@@ -65,6 +58,6 @@ fprintf('Our distance from truth: %5.3f, minFunc distance from truth: %5.3f\n', 
 
  fprintf('Inf norm between our solution and minFunc solution: %5.3f\n', norm(xMF - xIP, inf));
  
- sum([abs((xIP-x0)./x0) abs((xMF-x0)./x0)])/n
+ %sum([abs((xIP-x0)./x0) abs((xMF-x0)./x0)])/n
  
 %[xIP xCVX]

@@ -15,7 +15,7 @@ function [ yOut normFout] = run_example( H, z, measurePLQ, processPLQ, params )
 %  lambda: tradeoff parameter between process and measurement
 
 
-barrier = 0;
+barrier = 1; 
 
 maxItNonlin = 100;
 

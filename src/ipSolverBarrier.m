@@ -6,6 +6,10 @@
 
 function [yOut, uOut, qOut, rOut, wOut, info] = ipSolverBarrier(b, Bm, c, C, M, q, u, r, w, y, params)
 
+if(~params.inexact)
+    params.info.pcgIter = -1;
+end
+
 converge = 0;
 max_itr = 100;
 gamma   = .01;
@@ -183,13 +187,13 @@ while ( ~ converge ) && (itr < max_itr)
 %        s_new = s + lambda * ds;
         q_new = q + lambda * dq;
         u_new = u + lambda * du;
-        if(params.uConstraints)
-            if(any(u_new > params.uMax))
-                error('u_new exceeds max constraints\n');
-            elseif (any(u_new < params.uMin))
-                error('u_new exceeds min constraints\n');
-            end
-        end
+%         if(params.uConstraints)
+%             if(any(u_new > params.uMax))
+%                 error('u_new exceeds max constraints\n');
+%             elseif (any(u_new < params.uMin))
+%                 error('u_new exceeds min constraints\n');
+%             end
+%         end
         
         y_new = y + lambda * dy;
         if(params.constraints)
