@@ -23,9 +23,9 @@ warning off all
 
 
 fprintf('Loading Data\n');
-%load('Data/rcv1_train.binary.mat'); data_flag = 1; dataset_name = 'rcv1';
+load('Data/rcv1_train.binary.mat'); data_flag = 1; dataset_name = 'rcv1';
 %load('adult.mat'); data_flag = 2; dataset_name = 'adult';
-load('sido.mat'); data_flag = 3; dataset_name = 'sido';
+%load('sido.mat'); data_flag = 3; dataset_name = 'sido';
 X = [ones(size(X,1),1) X];
 [size_dataset,p] = size(X);
 
@@ -56,7 +56,7 @@ Xlabt = Xlab';
 
 
 params.procLinear = 0;
-params.uConstraints = 1;
+params.uConstraints = 0;
 params.meas_scale = 1;
 params.uMax = 1;
 params.uMin = 0; % 
@@ -74,10 +74,10 @@ params.uMin = 0; %
  
  params.inexact = 1;
  params.proc_lambda = 1e1;
-% params.proc_mMult = 1e4;
+ params.proc_mMult = 1;
  params.rho = 0;
  params.delta = 0;
-[xIP] = run_example(Xlab, 0*y, 'logreg', 'l1', params);
+[xIP] = run_example(Xlab, 0*y, 'logreg', 'l2', params);
 
 
 
