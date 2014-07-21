@@ -23,7 +23,7 @@ function [prod] = kktAction(v, Bm, C, M, s, q, r, w, params)
 
 
 % SASHA: this crazy thing is off for now. 
-%funM = isa(M, 'function_handle'); % for now, assume only measurement could be this way
+funM = isa(M, 'function_handle'); % for now, assume only measurement could be this way
 
 
 rho = params.rho;

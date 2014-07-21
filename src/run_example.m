@@ -227,9 +227,9 @@ if(explicit)
     
     L = size(C, 2);
     
-    sIn = 10*ones(L, 1);
+%    sIn = 10*ones(L, 1);
     qIn = 10*ones(L, 1);
-    uIn = zeros(K, 1) + 0.01;
+    uIn = zeros(K, 1) + .001;
    
     yIn   = ones(n, 1);
    
@@ -263,11 +263,18 @@ if(explicit)
     
     params.mu = 0;
     
-    Fin = kktSystem(b, Bm, c, C, Mv, sIn, qIn, uIn,  rIn, wIn, yIn,params);
+    Fin = kktSystemBarrier(b, Bm, c, C, Mv, qIn, uIn,  rIn, wIn, yIn,params);
+%    Fin = kktSystem(b, Bm, c, C, Mv, sIn, qIn, uIn,  rIn, wIn, yIn,params);
     
-    [yOut, uOut, qOut, sOut, rOut, wOut, info] = ipSolver(b, Bm, c, C, Mv, sIn, qIn, uIn, rIn, wIn, yIn, params);
-    
-    Fout = kktSystem(b, Bm, c, C, Mv, sOut, qOut, uOut, rOut, wOut, yOut, params);
+    info.pcgIter = [];
+    params.info = info;
+    [yOut, uOut, qOut, rOut, wOut, info] = ipSolverBarrier(b, Bm, c, C, Mv, qIn, uIn, rIn, wIn, yIn, params);
+
+    %[yOut, uOut, qOut, sOut, rOut, wOut, info] = ipSolver(b, Bm, c, C, Mv, sIn, qIn, uIn, rIn, wIn, yIn, params);
+
+    Fout = kktSystemBarrier(b, Bm, c, C, Mv, qOut, uOut, rOut, wOut, yOut, params);
+
+%    Fout = kktSystem(b, Bm, c, C, Mv, sOut, qOut, uOut, rOut, wOut, yOut, params);
     
     ok = norm(Fout) < 1e-6;
     normFout = norm(Fout); % Added by NRK

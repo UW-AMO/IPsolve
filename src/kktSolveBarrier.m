@@ -78,9 +78,9 @@ r1 = -d.*q + mu;
 
 % r2 changed a bit
 if(pFlag)
-    r2      = -([Bm*y; Bn*y] - Mu - C*q + b) + mu*C*(1./d);
+    r2      = -([Bm*y; Bn*y] - Mu + b) + mu*C*(1./d); % removed -Cq from inside parens
 else
-    r2      = -(Bm*y - Mu - C*q + b) + mu*C*(1./d);
+    r2      = -(Bm*y - Mu + b) + mu*C*(1./d); % removed -Cq from inside parens
 end
 
 

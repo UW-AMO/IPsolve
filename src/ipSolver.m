@@ -21,7 +21,7 @@ epsMu = params.optTol;
 inexact = params.inexact;
 
 % cg interior parameter
-params.tolqual = 1e-6;
+params.tolqual = 1e-5;
 itr = 0;
 
 %initialize mu
@@ -29,9 +29,9 @@ params.mu = 1;
 
 
 if(~params.silent)
-    logB = ' %5i  %13.7f  %13.7f  %13.7f';
-    logH = ' %5s  %13s  %13s  %13s \n';
-    fprintf(logH,'Iter','Objective','KKT Norm','mu');
+    logB = ' %5i  %13.1e  %13.1e  %13.1e %13i %13.1e %13i ';
+    logH = ' %5s  %13s  %13s  %13s %13s %13s %13s\n';
+    fprintf(logH,'Iter','Objective','KKT Norm','mu', 'pcgIter', 'inStep', 'numArmijo');
     fprintf('\n');
 end
 %printf(logB,undist(iter),undist(rNorm),undist(rErr),undist(rError1),undist(gNorm),log10(undist(stepG)));
@@ -48,14 +48,6 @@ while ( ~ converge ) && (itr < max_itr)
         G_in = norm(F, inf);
     end
     
-    if(~params.silent)
-%        fprintf('%d \t %5.3f\t %5.4f\t\t %5.4f\n', itr, params.objFun(y), norm(F, inf), params.mu);
-        fprintf(logB, itr, params.objFun(y), norm(F, inf), params.mu);
-        fprintf('\n');
-    end
-
-    itr = itr + 1;
-
     
     % dominique pcg tolerance suggestion
     params.useChol = 0;
@@ -102,7 +94,7 @@ while ( ~ converge ) && (itr < max_itr)
 %[ds, dq, du, dr, dw, dy] =  kktSolve(b, Bm, c, C, M, s, q, u, r, w, y, params);
 
 % Two: pcg on schur complement:
-[ds, dq, du, dr, dw, dy] =  kktSolveNew(b, Bm, c, C, M, s, q, u, r, w, y, params);
+[ds, dq, du, dr, dw, dy, params] =  kktSolveNew(b, Bm, c, C, M, s, q, u, r, w, y, params);
 
 % Three: minres on new system:
 
@@ -125,6 +117,10 @@ while ( ~ converge ) && (itr < max_itr)
     else
         ratio      = [ ds ; dq] ./ [s ; q ];
     end
+
+%     rNeg = -1./ratio(ratio < 0);
+%     maxNeg = min(min(rNeg));
+%     lambda_in_before = .99*min(min(maxNeg),1);
     
     if(params.uConstraints)
        ustepsPos = (params.uMax - u(du>0))./(du(du>0));
@@ -159,11 +155,14 @@ while ( ~ converge ) && (itr < max_itr)
     end
     
     
+
+    
     if(lambda <0)
         error('negative lambda');
     end
     % line search
     %
+    lambda_in = lambda;
     ok        = 0;
     kount     = 0;
     max_kount = 20;
@@ -216,9 +215,17 @@ while ( ~ converge ) && (itr < max_itr)
         ok   = (G_new <= (1 - gamma *lambda) * G);
     end
     
-    if(~params.silent)
-        fprintf('number of line searches: %d\n', kount);
-    end    
+        if(~params.silent)
+     %   fprintf(logB, itr, params.objFun(y), norm(F, inf), params.mu, params.info.pcgIter(end), lambda_in, kount);
+        fprintf(logB, itr, params.objFun(y), norm(F, inf), params.mu, params.info.pcgIter(end), lambda_in, kount);
+
+        fprintf('\n');
+    end
+
+    itr = itr + 1;
+
+    
+    
     % SASHA: note tweak for failed line search. 
      if ~ok
          fprintf('Line search failed, returning\n');

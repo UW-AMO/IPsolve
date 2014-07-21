@@ -123,8 +123,8 @@ if pFlag && n > m && pSparse &&~inexact
         
         %maxElt = max(diag(BTB));
         %precon = diag(max(maxElt*ones(m,1), diag(Tm)));
-        
-        [u] = pcg(TBAB, r, params.tolqual, 10000);
+        [u, FLAG,RELRES,ITER] = pcg(TBAB, r, params.tolqual, 10000);
+        params.info.pcgIter = [params.info.pcgIter ITER];
         
         % direct working version
     else
@@ -163,12 +163,14 @@ else
 %            preCon = @(x) x/delta - Bm'*((Tm + (params.Anorm^2/delta)*speye(size(Tm)))\(Bm*x))/delta^2;
 %            [dy] = pcg(Omega, r6, params.tolqual, 10000, preCon);
 
-            [dy] = pcg(Omega, r6, params.tolqual, 10000);
+            [dy, FLAG,RELRES,ITER] = pcg(Omega, r6, params.tolqual, 10000);
+            params.info.pcgIter = [params.info.pcgIter ITER];
 
             
+            
 
-%            [dy] = pcg(Omega, r6, params.tolqual, 10000);
-
+%            [dy] = minres(Omega, r6, params.tolqual, 10000);
+            
             
 %            preCon = @(x) x/delta - Bm'*(Tm\(Bm*x));
 
@@ -180,13 +182,20 @@ else
         end
     else
         if(inexact)
-            Omega   =  @(x) A*(WR*(A'*x)) + Bm'*(T\(Bm*x)) + delta*x;
+            if(pCon)
+                
+                Omega   =  @(x) A*(WR*(A'*x)) + Bm'*(T\(Bm*x)) + delta*x;
+            else
+                Omega   =  @(x) Bm'*(T\(Bm*x)) + delta*x;
+            end
 
       %      preCon = @(x) x/delta - Bm'*((T + (params.Anorm^2/delta)*speye(size(T)))\(Bm*x))/delta^2;
       %      [dy] = pcg(Omega, r6, params.tolqual, 10000, preCon);
             
             
-            [dy] = pcg(Omega, r6, params.tolqual, 10000);
+            [dy, FLAG,RELRES,ITER] = pcg(Omega, r6, params.tolqual, 10000); 
+            params.info.pcgIter = [params.info.pcgIter ITER];
+
             
         else
             if(pCon)

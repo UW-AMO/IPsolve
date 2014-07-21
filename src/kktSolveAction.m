@@ -7,15 +7,35 @@
 function [ds, dq, du, dr, dw, dy, params] = kktSolveAction(b, Bm, c, C, Mfun, s, q, u, r, w, y, params)
 
 
+pFlag = params.pFlag;
 pCon = params.constraints;
 mu = params.mu;
+funM = isa(Mfun, 'function_handle');
+
 
 % First, set up RHS
 rhs = kktRHS(b, Bm, c, C, Mfun, s, q, u, r, w, y, params);
 
+m = size(Bm, 1);
+
+if(pFlag)
+%    MMn = params.M2;
+    um = u(1:m);
+%    un = u(m+1:end);
+else
+    um = u;
+end
+
+if(funM)
+    [~, MMm] = Mfun(um);
+else
+    MMm = Mfun;
+%    Mum = MMm*um;
+end
+
 
 % Second, set up action
-multAction = @(x)kktAction(x, Bm, C, Mfun, s, q, r, w, params);
+multAction = @(x)kktAction(x, Bm, C, MMm, s, q, r, w, params);
 
 
 %mat = kktPrecond(Bm, Mfun, s, q, r, w, params);
