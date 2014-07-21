@@ -15,6 +15,8 @@ function [ yOut normFout] = run_example( H, z, measurePLQ, processPLQ, params )
 %  lambda: tradeoff parameter between process and measurement
 
 
+barrier = 0;
+
 maxItNonlin = 100;
 
 explicit = ~(isa(H,'function_handle'));
@@ -35,23 +37,23 @@ t_start = tic;
 
 % general algorithm parameteres
 if(~isfield(params, 'relOpt'))
-   params.relOpt = 1e-5; 
+    params.relOpt = 1e-5;
 end
 if(~isfield(params, 'optTol'))
-   params.optTol = 1e-5; 
+    params.optTol = 1e-5;
 end
 if(~isfield(params, 'silent'))
-   params.silent = 0; 
+    params.silent = 0;
 end
 if(~isfield(params, 'constraints'))
-   params.constraints = 0; 
+    params.constraints = 0;
 end
 if(~isfield(params, 'inexact'))
-   params.inexact = 0; 
+    params.inexact = 0;
 end
 
 
-% controls for process model 
+% controls for process model
 
 if(~isfield(params, 'dictionary')) % specific to dictionary learning
     params.dictionary = 0;
@@ -64,7 +66,7 @@ if(~isfield(params, 'proc_scale'))
     params.proc_scale = 1;
 end
 if(~isfield(params, 'proc_mMult'))
-   params.proc_mMult = 1; 
+    params.proc_mMult = 1;
 end
 if(~isfield(params, 'proc_eps'))
     params.proc_eps = 0.2;
@@ -93,7 +95,7 @@ if(~isfield(params, 'meas_scale'))
     params.meas_scale = 1;
 end
 if(~isfield(params, 'meas_mMult'))
-   params.meas_mMult = 1; 
+    params.meas_mMult = 1;
 end
 if(~isfield(params, 'meas_eps'))
     params.meas_eps = 0.2;
@@ -124,12 +126,12 @@ if(explicit)
     m = size(H, 1);
     par.m = m;
     n = size(H, 2);
-else  % if nonlinear, m must be in params. 
+else  % if nonlinear, m must be in params.
     m = params.m;
     par.m = m;
     n = params.n;
 end
-    
+
 if(params.procLinear)
     params.pSparse = 0; % should be true if K is sparse
     pLin = params.K;
@@ -168,7 +170,7 @@ end
 % Load dictionary
 if(pFlag && params.dictionary)
     par_proc.mMult = params.dict_mMult;
-
+    
     par_proc.lambda = params.proc_lambda;
     par_proc.kappa = params.proc_kappa;
     par_proc.tau = params.proc_tau;
@@ -190,7 +192,7 @@ par_meas.scale = params.meas_scale;
 
 
 if(explicit)
-
+    
     [Mv Cv cv bv Bv mFun] = loadPenalty(H, z, measurePLQ, par_meas);
     
     % define objective function
@@ -213,7 +215,7 @@ if(explicit)
         if(params.dictionary)
             [bw, Bw, cw, Cw, Mw] = addPLQFull(bd, Bd, cd, Cd, Md, bw, Bw, cw, Cw, Mw);
         end
-            
+        
         [b, c, C] = addPLQ(bv, cv, Cv, bw, cw, Cw);
         Bm = Bv;
         params.B2 = Bw;
@@ -227,12 +229,14 @@ if(explicit)
     
     L = size(C, 2);
     
-%    sIn = 10*ones(L, 1);
+    if(~barrier)
+        sIn = 10*ones(L, 1);
+    end
     qIn = 10*ones(L, 1);
     uIn = zeros(K, 1) + .001;
-   
+    
     yIn   = ones(n, 1);
-   
+    
     
     if(params.constraints)
         P = size(params.A, 2);
@@ -263,18 +267,23 @@ if(explicit)
     
     params.mu = 0;
     
-    Fin = kktSystemBarrier(b, Bm, c, C, Mv, qIn, uIn,  rIn, wIn, yIn,params);
-%    Fin = kktSystem(b, Bm, c, C, Mv, sIn, qIn, uIn,  rIn, wIn, yIn,params);
+    if(barrier)
+        Fin = kktSystemBarrier(b, Bm, c, C, Mv, qIn, uIn,  rIn, wIn, yIn,params);
+    else
+        Fin = kktSystem(b, Bm, c, C, Mv, sIn, qIn, uIn,  rIn, wIn, yIn,params);
+    end
     
     info.pcgIter = [];
     params.info = info;
-    [yOut, uOut, qOut, rOut, wOut, info] = ipSolverBarrier(b, Bm, c, C, Mv, qIn, uIn, rIn, wIn, yIn, params);
+    if(barrier)
+        [yOut, uOut, qOut, rOut, wOut, info] = ipSolverBarrier(b, Bm, c, C, Mv, qIn, uIn, rIn, wIn, yIn, params);
+        Fout = kktSystemBarrier(b, Bm, c, C, Mv, qOut, uOut, rOut, wOut, yOut, params);
 
-    %[yOut, uOut, qOut, sOut, rOut, wOut, info] = ipSolver(b, Bm, c, C, Mv, sIn, qIn, uIn, rIn, wIn, yIn, params);
-
-    Fout = kktSystemBarrier(b, Bm, c, C, Mv, qOut, uOut, rOut, wOut, yOut, params);
-
-%    Fout = kktSystem(b, Bm, c, C, Mv, sOut, qOut, uOut, rOut, wOut, yOut, params);
+    else
+        [yOut, uOut, qOut, sOut, rOut, wOut, info] = ipSolver(b, Bm, c, C, Mv, sIn, qIn, uIn, rIn, wIn, yIn, params);
+        Fout = kktSystem(b, Bm, c, C, Mv, sOut, qOut, uOut, rOut, wOut, yOut, params);
+    end
+    
     
     ok = norm(Fout) < 1e-6;
     normFout = norm(Fout); % Added by NRK
@@ -287,9 +296,9 @@ if(explicit)
         toc(t_start);
     end
 else
-    % initialize y 
+    % initialize y
     y   = zeros(n, 1);
- %   y = randn(n,1);
+    %   y = randn(n,1);
     converged = 0;
     fprintf('\n');
     fprintf(' %s\n',repmat('=',1,80));
@@ -302,14 +311,14 @@ else
     fprintf(' %-22s: %s\n'     ,'Regularizer'       , measurePLQ);
     fprintf(' %s\n',repmat('=',1,80));
     fprintf('\n');
-
+    
     
     params.silent = 1;
     logB = ' %5i  %13.7f  %13.7f  %13i %13i';
     logH = ' %5s  %13s  %13s  %13s %13s \n';
     fprintf(logH,'Iter','Objective','dirDer','LS-iter','inner');
     fprintf('\n');
-
+    
     
     
     
@@ -317,13 +326,13 @@ else
     tic
     while(~converged)&&itr <= maxItNonlin
         % evaluate z and H
-        [Hy Hex] = H(y); 
+        [Hy Hex] = H(y);
         zex = z - Hy;
         [Mv Cv cv bv Bv mFun] = loadPenalty(Hex, zex, measurePLQ, par_meas);
         % define objective function
         
         
-
+        
         K = size(Bv, 1);
         params.pFlag = pFlag;
         params.m = m;
@@ -349,7 +358,7 @@ else
             params.objLin = @(x) mFun(Hex*x - zex);
             
         end
-
+        
         
         L = size(C, 2);
         
@@ -366,41 +375,41 @@ else
             rIn = [];
             wIn = [];
         end
-    
+        
         obj_cur = params.objFun(y);
         
         
         
         % debugging lines
-       % obj_cur_affine = params.objLin(0*y);
-       % fprintf('obj_cur: %5.4f, obj_cur_affine: %5.4f\n', obj_cur, obj_cur_affine); 
-       % fprintf('current: %5.4f\n', obj_cur);
+        % obj_cur_affine = params.objLin(0*y);
+        % fprintf('obj_cur: %5.4f, obj_cur_affine: %5.4f\n', obj_cur, obj_cur_affine);
+        % fprintf('current: %5.4f\n', obj_cur);
         [yOut, uOut, qOut, sOut, rOut, wOut, info] = ipSolver(b, Bm, c, C, Mv, sIn, qIn, uIn, rIn, wIn, yIn, params);
         
         params.mu = 0;
         F = kktSystem(b, Bm, c, C, Mv, sOut, qOut, uOut, rOut, wOut, yOut, params);
-
+        
         
         % line search
-%        dirDer = params.objLin(yOut) - params.objFun(yOut);
+        %        dirDer = params.objLin(yOut) - params.objFun(yOut);
         dirDer = params.objLin(yOut) - obj_cur;
-   %     converged = dirDer > -params.optTol;
+        %     converged = dirDer > -params.optTol;
         converged = dirDer > -params.optTol*1e2; %|| norm(F, inf) < 1e-4;
         
-% 
-%         if(converged)
-%             y_new = yOut;
-% %             if(abs(dirDer) < params.optTol*1e2)
-% %                 y_new = yOut;
-% %                 obj_lambda = params.objFun(y_new);
-% %             else
-% %                 y_new = yIn;
-% %                 obj_lambda = params.objFun(y_new);
-% %             end
-% %             fprintf(logB, itr, obj_lambda, dirDer, 0, info.itr);
-% %             fprintf('\n');
-%             break;
-%         end
+        %
+        %         if(converged)
+        %             y_new = yOut;
+        % %             if(abs(dirDer) < params.optTol*1e2)
+        % %                 y_new = yOut;
+        % %                 obj_lambda = params.objFun(y_new);
+        % %             else
+        % %                 y_new = yIn;
+        % %                 obj_lambda = params.objFun(y_new);
+        % %             end
+        % %             fprintf(logB, itr, obj_lambda, dirDer, 0, info.itr);
+        % %             fprintf('\n');
+        %             break;
+        %         end
         
         c = 0.001;
         gamma = 0.5;
@@ -415,18 +424,18 @@ else
             y_new = y + lambda * (yOut);
             obj_lambda = params.objFun(y_new);
             done = ((obj_lambda - obj_cur) <= c*lambda*dirDer);
-        %    fprintf('S_itr: %s, Diff: %5.4f, dirDer: %5.4f\n', obj_lambda - obj_cur, dirDer);
+            %    fprintf('S_itr: %s, Diff: %5.4f, dirDer: %5.4f\n', obj_lambda - obj_cur, dirDer);
         end
         
         if(search_itr == max_search_itr)
             
             fprintf('Norm of F: %5.4f\n', norm(F, inf));
             break
-%             if(converged)
-%                 break
-%             else
-%                 error('line search did not converge');
-%             end
+            %             if(converged)
+            %                 break
+            %             else
+            %                 error('line search did not converge');
+            %             end
         end
         
         fprintf(logB, itr, obj_lambda, dirDer, search_itr, info.itr);
@@ -434,7 +443,7 @@ else
         
         itr = itr + 1;
         
-        y = y_new;        
+        y = y_new;
     end
     yOut = y_new;
     toc
