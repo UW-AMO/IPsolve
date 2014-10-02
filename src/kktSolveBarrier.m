@@ -108,7 +108,8 @@ end
 
 % compute dy
 if pFlag && n > m && pSparse &&~inexact
-    BTB = Bn'*(Tn\Bn) + SpOmegaMod; % large sparse matrix
+    %    BTB = Bn'*(Tn\Bn) + SpOmegaMod; % large sparse matrix
+    BTB = Bn'*(Tn\Bn) +A*WR*A' + delta*speye(size(Bn,2));
     
     Air4 = BTB\r5;
     r = Bm*Air4;

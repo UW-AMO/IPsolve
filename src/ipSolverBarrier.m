@@ -261,28 +261,25 @@ while ( ~ converge ) && (itr < max_itr)
             end
             
             params.useChol = 0;
-            [dq, du, dr, dw, dy, params] =  kktSolveNew(b, Bm, c, C, M, q_new, u_new, r_new, w_new, y_new, params);
+            [dq, du, dr, dw, dy, params] =  kktSolveBarrier(b, Bm, c, C, M, q_new, u_new, r_new, w_new, y_new, params);
             
-            %params.useChol = 1;
-            %[ds, dq, du, dr, dw, dy, params] =  kktSolveNew(b, Bm, c, C, M, s, q, u, r, w, y_new, params);
-
-            if(any(isnan([ds; dq; du; dr; dw; dy])))
+            if(any(isnan([dq; du; dr; dw; dy])))
                 error('Nans in IPsolve');
             end
             
-            if(any(~isreal([ds; dq; du; dr; dw; dy])))
+            if(any(~isreal([dq; du; dr; dw; dy])))
                 fprintf('iter = %d\n', itr);
                 error('complex values in IPsolve');
             end
             
             
-            d = c - C'*u;
-            dd = c - C'*du;
+            d_new = c - C'*u_new;
+            dd = -C'*du;
             
             if(params.constraints)
-                ratio      = [ dd ; dq; dr ; dw ] ./ [d ; q ;  r ; w ];
+                ratio      = [ dd ; dq; dr ; dw ] ./ [d_new ; q_new ;  r_new ; w_new ];
             else
-                ratio      = [ dd ; dq] ./ [d ; q ];
+                ratio      = [ dd ; dq] ./ [d_new ; q_new ];
             end
             
             ratioMax = max(max( - ratio ));
@@ -316,8 +313,8 @@ while ( ~ converge ) && (itr < max_itr)
             %params.mu = muOld;
             
             
-            if min(min(s_new)) <= 0 || min(min(q_new)) <=0
-                fprintf('min of s_new: %5.3f, min of q_new: %5.3f\n', min(min(s_new)), min(min(q_new)));
+            if  min(min(q_new)) <=0
+                fprintf('min of q_new: %5.3f\n', min(min(q_new)));
                 error('ipSolver: program error, negative entries in mehrotra part');
             end
 
