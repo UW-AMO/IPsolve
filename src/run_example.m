@@ -15,19 +15,6 @@ function [ yOut normFout] = run_example( H, z, measurePLQ, processPLQ, params )
 %  lambda: tradeoff parameter between process and measurement
 
 
-barrier = 1; 
-
-maxItNonlin = 100;
-
-explicit = ~(isa(H,'function_handle'));
-
-if(explicit)
-    params.relTol = 0;  % solve each subproblem to completion
-else
-    params.relTol = 0.1; % solve each subproblem approximately.
-end
-
-
 REVISION = '$Rev: 2 $';
 DATE     = '$Date: 2013-07-01 17:41:32 -0700 (Mon, 01 Jul 2013) $';
 REVISION = REVISION(6:end-1);
@@ -35,92 +22,17 @@ DATE     = DATE(35:50);
 
 t_start = tic;
 
-% general algorithm parameteres
-if(~isfield(params, 'relOpt'))
-    params.relOpt = 1e-5;
-end
-if(~isfield(params, 'optTol'))
-    params.optTol = 1e-5;
-end
-if(~isfield(params, 'silent'))
-    params.silent = 0;
-end
-if(~isfield(params, 'constraints'))
-    params.constraints = 0;
-end
-if(~isfield(params, 'inexact'))
-    params.inexact = 0;
-end
+% lets one use different solvers, in principle 
+% though for now all interface must match.
+kktSystemFunc = @kktSystemBarrier;
+ipSolverFunc  = @ipSolverBarrier;
+    
+maxItNonlin = 100;
 
+explicit = ~(isa(H,'function_handle'));
 
-% controls for process model
-
-if(~isfield(params, 'dictionary')) % specific to dictionary learning
-    params.dictionary = 0;
-end
-
-if(~isfield(params, 'procLinear'))
-    params.procLinear = 0;
-end
-if(~isfield(params, 'proc_scale'))
-    params.proc_scale = 1;
-end
-if(~isfield(params, 'proc_mMult'))
-    params.proc_mMult = 1;
-end
-if(~isfield(params, 'proc_eps'))
-    params.proc_eps = 0.2;
-end
-if(~isfield(params, 'proc_lambda'))
-    params.proc_lambda = 1;
-end
-if(~isfield(params,'proc_kappa'))
-    params.proc_kappa = 1;
-end
-if(~isfield(params, 'proc_tau'))
-    params.proc_tau = 1;
-end
-
-if(~isfield(params,'rho'))
-    params.rho = 0;
-end
-if(~isfield(params, 'delta'))
-    params.delta = 0;
-end
-
-
-
-% control for measurement model
-if(~isfield(params, 'meas_scale'))
-    params.meas_scale = 1;
-end
-if(~isfield(params, 'meas_mMult'))
-    params.meas_mMult = 1;
-end
-if(~isfield(params, 'meas_eps'))
-    params.meas_eps = 0.2;
-end
-if(~isfield(params, 'meas_lambda'))
-    params.meas_lambda = 1;
-end
-if(~isfield(params,'meas_kappa'))
-    params.meas_kappa = 1;
-end
-if(~isfield(params, 'meas_tau'))
-    params.meas_tau = 1;
-end
-
-% control for restricting conjugate domain
-if(~isfield(params, 'uConstraints'))
-    params.uConstraints = 0;
-end
-
-% control for using predictor-corrector
-if(~isfield(params, 'mehrotra'))
-    params.mehrotra = 0;
-end
-
-
+% new set params function
+params = setParms(params, explicit); 
 
 if(explicit)
     m = size(H, 1);
@@ -229,9 +141,9 @@ if(explicit)
     
     L = size(C, 2);
     
-    if(~barrier)
-        sIn = 10*ones(L, 1);
-    end
+%     if(~barrier)
+%         sIn = 10*ones(L, 1);
+%     end
     qIn = 10*ones(L, 1);
     uIn = zeros(K, 1) + .001;
     
@@ -267,22 +179,11 @@ if(explicit)
     
     params.mu = 0;
     
-    if(barrier)
-        Fin = kktSystemBarrier(b, Bm, c, C, Mv, qIn, uIn,  rIn, wIn, yIn,params);
-    else
-        Fin = kktSystem(b, Bm, c, C, Mv, sIn, qIn, uIn,  rIn, wIn, yIn,params);
-    end
-    
+    Fin = kktSystemFunc(b, Bm, c, C, Mv, qIn, uIn, rIn, wIn, yIn,params);    
     info.pcgIter = [];
     params.info = info;
-    if(barrier)
-        [yOut, uOut, qOut, rOut, wOut, info] = ipSolverBarrier(b, Bm, c, C, Mv, qIn, uIn, rIn, wIn, yIn, params);
-        Fout = kktSystemBarrier(b, Bm, c, C, Mv, qOut, uOut, rOut, wOut, yOut, params);
-
-    else
-        [yOut, uOut, qOut, sOut, rOut, wOut, info] = ipSolver(b, Bm, c, C, Mv, sIn, qIn, uIn, rIn, wIn, yIn, params);
-        Fout = kktSystem(b, Bm, c, C, Mv, sOut, qOut, uOut, rOut, wOut, yOut, params);
-    end
+    [yOut, uOut, qOut, rOut, wOut, info] = ipSolverFunc(b, Bm, c, C, Mv, qIn, uIn, rIn, wIn, yIn, params);
+    Fout = kktSystemFunc(b, Bm, c, C, Mv, qOut, uOut, rOut, wOut, yOut, params);
     
     
     ok = norm(Fout) < 1e-6;
@@ -362,7 +263,7 @@ else
         
         L = size(C, 2);
         
-        sIn = 100*ones(L, 1);
+%        sIn = 100*ones(L, 1);
         qIn = 100*ones(L, 1);
         uIn = zeros(K, 1) + 0.01;
         yIn = zeros(n,1);
@@ -384,10 +285,10 @@ else
         % obj_cur_affine = params.objLin(0*y);
         % fprintf('obj_cur: %5.4f, obj_cur_affine: %5.4f\n', obj_cur, obj_cur_affine);
         % fprintf('current: %5.4f\n', obj_cur);
-        [yOut, uOut, qOut, sOut, rOut, wOut, info] = ipSolver(b, Bm, c, C, Mv, sIn, qIn, uIn, rIn, wIn, yIn, params);
+        [yOut, uOut, qOut, sOut, rOut, wOut, info] = ipSolverFunc(b, Bm, c, C, Mv, qIn, uIn, rIn, wIn, yIn, params);
         
         params.mu = 0;
-        F = kktSystem(b, Bm, c, C, Mv, sOut, qOut, uOut, rOut, wOut, yOut, params);
+        F = kktSystemFunc(b, Bm, c, C, Mv, sOut, qOut, uOut, rOut, wOut, yOut, params);
         
         
         % line search
