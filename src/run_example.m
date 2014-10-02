@@ -285,10 +285,10 @@ else
         % obj_cur_affine = params.objLin(0*y);
         % fprintf('obj_cur: %5.4f, obj_cur_affine: %5.4f\n', obj_cur, obj_cur_affine);
         % fprintf('current: %5.4f\n', obj_cur);
-        [yOut, uOut, qOut, sOut, rOut, wOut, info] = ipSolverFunc(b, Bm, c, C, Mv, qIn, uIn, rIn, wIn, yIn, params);
+        [yOut, uOut, qOut, rOut, wOut, info] = ipSolverFunc(b, Bm, c, C, Mv, qIn, uIn, rIn, wIn, yIn, params);
         
         params.mu = 0;
-        F = kktSystemFunc(b, Bm, c, C, Mv, sOut, qOut, uOut, rOut, wOut, yOut, params);
+        F = kktSystemFunc(b, Bm, c, C, Mv, qOut, uOut, rOut, wOut, yOut, params);
         
         
         % line search
