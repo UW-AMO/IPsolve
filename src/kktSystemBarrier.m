@@ -4,9 +4,10 @@
 % License: Eclipse Public License version 1.0
 % -----------------------------------------------------------------------------
 
-function [F] = kktSystemBarrier(b, Bm, c, C, M, q, u, r, w, y, params)
+function [F] = kktSystemBarrier(linTerm, b, Bm, c, C, M, q, u, r, w, y, params)
 
 % Let's see who's in where
+% linTerm              :   linear term in the objective
 % mu                   :   scalar
 % dy, y                :   Nx1, dimension of parameter space
 % u, du, b             :   Kx1, dimension of U
@@ -91,9 +92,9 @@ end
 
 % fifth part almost identical
 if(pFlag)
-     r5 = Bm'*um + Bn'*un + Aw;
+     r5 = Bm'*um + Bn'*un + Aw + linTerm;
 else
-     r5 = Bm'*um + Aw;
+     r5 = Bm'*um + Aw + linTerm;
 end
 
 

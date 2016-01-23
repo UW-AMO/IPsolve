@@ -5,14 +5,21 @@
 % -----------------------------------------------------------------------------
 
 
-function [ yOut normFout] = run_example( H, z, measurePLQ, processPLQ, params )
+function [ yOut, normFout] = run_example( H, z, measurePLQ, processPLQ, linTerm, params )
 %RUN_EXAMPLE Runs simple examples for ADMM comparison
 %   Input:
 %       H: linear model
 %       z: observed data
 %    meas: measurement model
 %    proc: process model, can be 'none'
+%    linTerm: linear term
 %  lambda: tradeoff parameter between process and measurement
+
+if(nargin < 6)
+    error('need to have six arguments. check that you specified linTerm');
+end
+
+
 
 
 REVISION = '$Rev: 2 $';
@@ -43,6 +50,11 @@ else  % if nonlinear, m must be in params.
     par.m = m;
     n = params.n;
 end
+
+if(isempty(linTerm))    
+    linTerm = zeros(n,1);
+end
+
 
 if(params.procLinear)
     params.pSparse = 0; % should be true if K is sparse
@@ -109,11 +121,11 @@ if(explicit)
     
     % define objective function
     if(pFlag && params.dictionary)
-        params.objFun = @(x) mFun(z - H*x) + pFun(x) + dFun(x + params.dict_vec);
+        params.objFun = @(x) linTerm'*x + mFun(z - H*x) + pFun(x) + dFun(x + params.dict_vec);
     elseif(pFlag)
-        params.objFun = @(x) mFun(z - H*x) + pFun(x);
+        params.objFun = @(x) linTerm'*x + mFun(z - H*x) + pFun(x);
     else
-        params.objFun = @(x) mFun(z - H*x);
+        params.objFun = @(x) linTerm'*x + mFun(z - H*x);
     end
     
     
@@ -145,7 +157,7 @@ if(explicit)
 %         sIn = 10*ones(L, 1);
 %     end
     qIn = 10*ones(L, 1);
-    uIn = zeros(K, 1) + .001;
+    uIn = zeros(K, 1) + .01;
     
     yIn   = ones(n, 1);
     
@@ -179,11 +191,11 @@ if(explicit)
     
     params.mu = 0;
     
-    Fin = kktSystemFunc(b, Bm, c, C, Mv, qIn, uIn, rIn, wIn, yIn,params);    
+    Fin = kktSystemFunc(linTerm, b, Bm, c, C, Mv, qIn, uIn, rIn, wIn, yIn,params);    
     info.pcgIter = [];
     params.info = info;
-    [yOut, uOut, qOut, rOut, wOut, info] = ipSolverFunc(b, Bm, c, C, Mv, qIn, uIn, rIn, wIn, yIn, params);
-    Fout = kktSystemFunc(b, Bm, c, C, Mv, qOut, uOut, rOut, wOut, yOut, params);
+    [yOut, uOut, qOut, rOut, wOut, info] = ipSolverFunc(linTerm, b, Bm, c, C, Mv, qIn, uIn, rIn, wIn, yIn, params);
+    Fout = kktSystemFunc(linTerm, b, Bm, c, C, Mv, qOut, uOut, rOut, wOut, yOut, params);
     
     
     ok = norm(Fout) < 1e-6;
@@ -252,11 +264,11 @@ else
         
         
         if(pFlag)
-            params.objFun = @(x) mFun(H(x) - z) + pFun(x);
-            params.objLin = @(x) mFun(Hex*(x) - zex)+pFun(x+y);
+            params.objFun = @(x) linTerm'*x + mFun(H(x) - z) + pFun(x);
+            params.objLin = @(x) linTerm'*(x+y) + mFun(Hex*(x) - zex)+pFun(x+y);
         else
-            params.objFun = @(x) mFun(H(x) - z);
-            params.objLin = @(x) mFun(Hex*x - zex);
+            params.objFun = @(x) linTerm'*x + mFun(H(x) - z);
+            params.objLin = @(x) linterm'*(x+y)+ mFun(Hex*x - zex);
             
         end
         
@@ -285,10 +297,10 @@ else
         % obj_cur_affine = params.objLin(0*y);
         % fprintf('obj_cur: %5.4f, obj_cur_affine: %5.4f\n', obj_cur, obj_cur_affine);
         % fprintf('current: %5.4f\n', obj_cur);
-        [yOut, uOut, qOut, rOut, wOut, info] = ipSolverFunc(b, Bm, c, C, Mv, qIn, uIn, rIn, wIn, yIn, params);
+        [yOut, uOut, qOut, rOut, wOut, info] = ipSolverFunc(linTerm, b, Bm, c, C, Mv, qIn, uIn, rIn, wIn, yIn, params);
         
         params.mu = 0;
-        F = kktSystemFunc(b, Bm, c, C, Mv, qOut, uOut, rOut, wOut, yOut, params);
+        F = kktSystemFunc(linTerm, b, Bm, c, C, Mv, qOut, uOut, rOut, wOut, yOut, params);
         
         
         % line search

@@ -54,7 +54,7 @@ lambda = 0.1*lambda_max;
 params.proc_lambda = lambda;
 params.meas_kappa = 1;
 params.inexact = 1;
-[xIP] = run_example(A, b, 'huber', 'l1', params);
+[xIP] = run_example(A, b, 'huber', 'l1', [], params);
 %Reporting
 
 kappa = cond(A)

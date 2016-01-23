@@ -34,7 +34,7 @@ params.kappa = 1;
 params.K = K;
 params.k = zeros(k,1);
 params.procLinear = 1;
-[xIP] = run_example(A, b, 'huber', 'l1', params);
+[xIP] = run_example(A, b, 'huber', 'l1', [], params);
 %Reporting
 
 

@@ -43,7 +43,7 @@ params.procLinear = 0;
 
 params.proc_lambda = lambda;
 params.meas_lambda = 1;
-[xIP] = run_example(A, b, 'l1', 'l1', params);
+[xIP] = run_example(A, b, 'l1', 'l1', [], params);
 %Reporting
 
 

@@ -34,7 +34,7 @@ params.inexact = 1;
 
 %params.rho = 1e-3;
 params.delta = 1e-5;
-[xIP] = run_example(A, b, 'l2', 'l1', params);
+[xIP] = run_example(A, b, 'l2', 'l1', [], params);
 %Reporting
 
 kappa = cond(A)

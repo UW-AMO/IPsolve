@@ -23,7 +23,7 @@ bADMM = xADMM(end);
 
 params.procLinear = 0;
 params.meas_lambda = lambda;
-[xIP] = run_example(A, ones(m,1), 'hinge', 'l2m', params);
+[xIP] = run_example(A, ones(m,1), 'hinge', 'l2m', [], params);
 
 
 [yTest, xTest] = libsvmread('./adult/a9a.t');

@@ -4,7 +4,7 @@
 % License: Eclipse Public License version 1.0
 % -----------------------------------------------------------------------------
 
-function [dq, du, dr, dw, dy, params] = kktSolveBarrier(b, Bm, c, C, Mfun, q, u, r, w, y, params)
+function [dq, du, dr, dw, dy, params] = kktSolveBarrier(linTerm, b, Bm, c, C, Mfun, q, u, r, w, y, params)
 
 
 inexact = params.inexact;
@@ -100,9 +100,9 @@ end
 
 utr = u - T\r2;
 if(pFlag)
-    r5      = -Bm'*utr(1:m) - Bn'*utr(m+1:end) - Awr4r ;
+    r5      = -Bm'*utr(1:m) - Bn'*utr(m+1:end) - Awr4r -linTerm;
 else
-    r5      = -Bm'*utr - Awr4r;
+    r5      = -Bm'*utr - Awr4r - linTerm;
 end
 
 

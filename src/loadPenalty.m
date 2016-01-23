@@ -163,7 +163,7 @@ switch(penalty)
         C = [speye(m); -speye(m)];
         c = lam*[ones(m, 1); zeros(m,1)]; % hinge!
         b = zeros(m,1);
-        B = speye(m);
+        B = -speye(m);
         
         % function handle to evaluate objective
         fun = @(x) lam*sum(pos(x));

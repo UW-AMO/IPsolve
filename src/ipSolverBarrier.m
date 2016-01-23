@@ -4,14 +4,14 @@
 % License: Eclipse Public License version 1.0
 % -----------------------------------------------------------------------------
 
-function [yOut, uOut, qOut, rOut, wOut, info] = ipSolverBarrier(b, Bm, c, C, M, q, u, r, w, y, params)
+function [yOut, uOut, qOut, rOut, wOut, info] = ipSolverBarrier(linTerm, b, Bm, c, C, M, q, u, r, w, y, params)
 
 if(~params.inexact)
     params.info.pcgIter = -1;
 end
 
 converge = 0;
-max_itr = 100;
+max_itr = 20;
 gamma   = .01;
 epsilon = 1e-6;
 
@@ -44,7 +44,7 @@ G_in = 0;
 while ( ~ converge ) && (itr < max_itr)
     
     
-    [F] = kktSystemBarrier(b, Bm, c, C, M, q, u, r, w, y, params);
+    [F] = kktSystemBarrier(linTerm, b, Bm, c, C, M, q, u, r, w, y, params);
 
     % store norm of initial KKT system
     if(itr == 1)
@@ -97,7 +97,7 @@ while ( ~ converge ) && (itr < max_itr)
 %[ds, dq, du, dr, dw, dy] =  kktSolve(b, Bm, c, C, M, s, q, u, r, w, y, params);
 
 % Two: pcg on schur complement:
-[dq, du, dr, dw, dy, params] =  kktSolveBarrier(b, Bm, c, C, M, q, u, r, w, y, params);
+[dq, du, dr, dw, dy, params] =  kktSolveBarrier(linTerm, b, Bm, c, C, M, q, u, r, w, y, params);
 
 % Three: minres on new system:
 
@@ -219,7 +219,7 @@ while ( ~ converge ) && (itr < max_itr)
 %         end
         
         %        [F] = kktSystem(b, Bm, c, C, M, s_new, q_new, u_new, r_new, w_new, y_new, params);
-        [F_new] = kktSystemBarrier(b, Bm, c, C, M, q_new, u_new, r_new, w_new, y_new, params);
+        [F_new] = kktSystemBarrier(linTerm, b, Bm, c, C, M, q_new, u_new, r_new, w_new, y_new, params);
         
         
         %% STOPPED
@@ -261,7 +261,7 @@ while ( ~ converge ) && (itr < max_itr)
             end
             
             params.useChol = 0;
-            [dq, du, dr, dw, dy, params] =  kktSolveBarrier(b, Bm, c, C, M, q_new, u_new, r_new, w_new, y_new, params);
+            [dq, du, dr, dw, dy, params] =  kktSolveBarrier(linTerm, b, Bm, c, C, M, q_new, u_new, r_new, w_new, y_new, params);
             
             if(any(isnan([dq; du; dr; dw; dy])))
                 error('Nans in IPsolve');
