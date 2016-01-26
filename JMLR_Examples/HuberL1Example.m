@@ -12,7 +12,7 @@ rand('seed',0);
 smooth = 0;
 
 % Choose whether the problem is well conditioned (1) or ill-conditioned (0)
-wellCond = 0;
+wellCond = 1;
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -54,7 +54,10 @@ lambda = 0.1*lambda_max;
 params.proc_lambda = lambda;
 params.meas_kappa = 1;
 params.inexact = 1;
-[xIP] = run_example(A, b, 'huber', 'l1', [], params);
+linTerm = [];
+%params.rho = 0.1;
+%params.delta = 0.1;
+[xIP] = run_example(A, b, 'huber', 'l1', linTerm, params);
 %Reporting
 
 kappa = cond(A)

@@ -11,7 +11,7 @@ if(~params.inexact)
 end
 
 converge = 0;
-max_itr = 20;
+max_itr = 100;
 gamma   = .01;
 epsilon = 1e-6;
 

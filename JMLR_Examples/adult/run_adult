@@ -1,3 +1,0 @@
-la_svm -g 0.005 -c 100  adult.trn
-la_test adult.tst adult.trn.model out
-
