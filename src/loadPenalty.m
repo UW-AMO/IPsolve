@@ -94,7 +94,7 @@ switch(penalty)
         
         
         % function handle to evaluate objective
-        fun = @(x) sum((abs(x) > mMult*kappa).*(abs(x) - 0.5*mMult*kappa).*sign(x) + (abs(x) < 0.5*mMult*kappa).*x.^2/(mMult*kappa)); 
+        fun = @(x) sum((abs(x) > mMult*kappa).*(abs(x) - 0.5*mMult*kappa).*sign(x) + (abs(x) <= mMult*kappa).*x.^2/(mMult*kappa)); 
         
         % function handle for gradients, in case this is needed elsewhere
         params.gfun = @(x) (abs(x) > mMult*kappa).*sign(x) + 2*(abs(x) <= 0.5*mMult*kappa).*x/(mMult*kappa);
