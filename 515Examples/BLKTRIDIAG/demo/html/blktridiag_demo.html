@@ -1,0 +1,291 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN">
+<html xmlns:mwsh="http://www.mathworks.com/namespace/mcode/v1/syntaxhighlight.dtd">
+   <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   
+      <!--
+This HTML is auto-generated from an M-file.
+To make changes, update the M-file and republish this document.
+      -->
+      <title>blktridiag_demo</title>
+      <meta name="generator" content="MATLAB 7.4">
+      <meta name="date" content="2007-12-14">
+      <meta name="m-file" content="blktridiag_demo"><style>
+
+body {
+  background-color: white;
+  margin:10px;
+}
+
+h1 {
+  color: #990000; 
+  font-size: x-large;
+}
+
+h2 {
+  color: #990000;
+  font-size: medium;
+}
+
+/* Make the text shrink to fit narrow windows, but not stretch too far in 
+wide windows. */ 
+p,h1,h2,div.content div {
+  max-width: 600px;
+  /* Hack for IE6 */
+  width: auto !important; width: 600px;
+}
+
+pre.codeinput {
+  background: #EEEEEE;
+  padding: 10px;
+}
+@media print {
+  pre.codeinput {word-wrap:break-word; width:100%;}
+} 
+
+span.keyword {color: #0000FF}
+span.comment {color: #228B22}
+span.string {color: #A020F0}
+span.untermstring {color: #B20000}
+span.syscmd {color: #B28C00}
+
+pre.codeoutput {
+  color: #666666;
+  padding: 10px;
+}
+
+pre.error {
+  color: red;
+}
+
+p.footer {
+  text-align: right;
+  font-size: xx-small;
+  font-weight: lighter;
+  font-style: italic;
+  color: gray;
+}
+
+  </style></head>
+   <body>
+      <div class="content">
+         <h2>Contents</h2>
+         <div>
+            <ul>
+               <li><a href="#1">A 10x10 tridiagonal matrix, with 2 on the diagonal, -1 on the off diagonal.</a></li>
+               <li><a href="#2">A lower block bidiagonal matrix with replicated blocks</a></li>
+               <li><a href="#3">A block tridiagonal matrix with replicated blocks</a></li>
+               <li><a href="#4">A tridiagonal matrix with random elements</a></li>
+               <li><a href="#5">A block tridiagonal matrix with distinct elements</a></li>
+               <li><a href="#6">A block tridiagonal matrix with 2x3 fixed non-square blocks</a></li>
+               <li><a href="#7">A block tridiagonal matrix with varying 3x2 non-square blocks</a></li>
+            </ul>
+         </div>
+         <h2>A 10x10 tridiagonal matrix, with 2 on the diagonal, -1 on the off diagonal.<a name="1"></a></h2><pre class="codeinput">A = blktridiag(2,-1,-1,10);
+
+<span class="comment">% The sparsity pattern is correct</span>
+spy(A)
+
+<span class="comment">% and the elements are as designated</span>
+full(A)
+</pre><pre class="codeoutput">ans =
+     2    -1     0     0     0     0     0     0     0     0
+    -1     2    -1     0     0     0     0     0     0     0
+     0    -1     2    -1     0     0     0     0     0     0
+     0     0    -1     2    -1     0     0     0     0     0
+     0     0     0    -1     2    -1     0     0     0     0
+     0     0     0     0    -1     2    -1     0     0     0
+     0     0     0     0     0    -1     2    -1     0     0
+     0     0     0     0     0     0    -1     2    -1     0
+     0     0     0     0     0     0     0    -1     2    -1
+     0     0     0     0     0     0     0     0    -1     2
+</pre><img vspace="5" hspace="5" src="blktridiag_demo_01.png"> <h2>A lower block bidiagonal matrix with replicated blocks<a name="2"></a></h2><pre class="codeinput"><span class="comment">% with 2x2 blocks of ones on the main diagonal, and</span>
+<span class="comment">% 2x2 blocks of twos on the sub-diagonal</span>
+
+A = blktridiag(ones(2),2*ones(2),zeros(2),5);
+
+spy(A)
+full(A)
+</pre><pre class="codeoutput">ans =
+     1     1     0     0     0     0     0     0     0     0
+     1     1     0     0     0     0     0     0     0     0
+     2     2     1     1     0     0     0     0     0     0
+     2     2     1     1     0     0     0     0     0     0
+     0     0     2     2     1     1     0     0     0     0
+     0     0     2     2     1     1     0     0     0     0
+     0     0     0     0     2     2     1     1     0     0
+     0     0     0     0     2     2     1     1     0     0
+     0     0     0     0     0     0     2     2     1     1
+     0     0     0     0     0     0     2     2     1     1
+</pre><img vspace="5" hspace="5" src="blktridiag_demo_02.png"> <h2>A block tridiagonal matrix with replicated blocks<a name="3"></a></h2><pre class="codeinput">Amd = reshape(1:9,3,3);
+Asub = reshape(11:19,3,3);
+Asup = reshape(21:29,3,3);
+A = blktridiag(Amd,Asub,Asup,4);
+
+spy(A)
+full(A)
+</pre><pre class="codeoutput">ans =
+     1     4     7    21    24    27     0     0     0     0     0     0
+     2     5     8    22    25    28     0     0     0     0     0     0
+     3     6     9    23    26    29     0     0     0     0     0     0
+    11    14    17     1     4     7    21    24    27     0     0     0
+    12    15    18     2     5     8    22    25    28     0     0     0
+    13    16    19     3     6     9    23    26    29     0     0     0
+     0     0     0    11    14    17     1     4     7    21    24    27
+     0     0     0    12    15    18     2     5     8    22    25    28
+     0     0     0    13    16    19     3     6     9    23    26    29
+     0     0     0     0     0     0    11    14    17     1     4     7
+     0     0     0     0     0     0    12    15    18     2     5     8
+     0     0     0     0     0     0    13    16    19     3     6     9
+</pre><img vspace="5" hspace="5" src="blktridiag_demo_03.png"> <h2>A tridiagonal matrix with random elements<a name="4"></a></h2><pre class="codeinput">Amd = rand(1,1,7);
+Asub = rand(1,1,6);
+Asup = rand(1,1,6);
+A = blktridiag(Amd,Asub,Asup);
+
+spy(A)
+full(A)
+</pre><pre class="codeoutput">ans =
+      0.75469      0.50596            0            0            0            0            0
+      0.95974      0.27603      0.69908            0            0            0            0
+            0      0.34039       0.6797       0.8909            0            0            0
+            0            0      0.58527       0.6551      0.95929            0            0
+            0            0            0      0.22381      0.16261      0.54722            0
+            0            0            0            0      0.75127        0.119      0.13862
+            0            0            0            0            0       0.2551      0.49836
+</pre><img vspace="5" hspace="5" src="blktridiag_demo_04.png"> <h2>A block tridiagonal matrix with distinct elements<a name="5"></a></h2><pre class="codeinput">Amd = reshape(1:27,[3 3 3]);
+Asub = reshape(101:118,[3 3 2]);
+Asup = reshape(201:218,[3 3 2]);
+A = blktridiag(Amd,Asub,Asup);
+
+spy(A)
+full(A)
+</pre><pre class="codeoutput">ans =
+     1     4     7   201   204   207     0     0     0
+     2     5     8   202   205   208     0     0     0
+     3     6     9   203   206   209     0     0     0
+   101   104   107    10    13    16   210   213   216
+   102   105   108    11    14    17   211   214   217
+   103   106   109    12    15    18   212   215   218
+     0     0     0   110   113   116    19    22    25
+     0     0     0   111   114   117    20    23    26
+     0     0     0   112   115   118    21    24    27
+</pre><img vspace="5" hspace="5" src="blktridiag_demo_05.png"> <h2>A block tridiagonal matrix with 2x3 fixed non-square blocks<a name="6"></a></h2><pre class="codeinput">Amd = rand(2,3);
+Asub = 2*ones(2,3);
+Asup = ones(2,3);
+A = blktridiag(Amd,Asub,Asup,3);
+
+spy(A)
+full(A)
+</pre><pre class="codeoutput">ans =
+  Columns 1 through 7
+      0.14929      0.84072      0.81428            1            1            1            0
+      0.25751      0.25428      0.24352            1            1            1            0
+            2            2            2      0.14929      0.84072      0.81428            1
+            2            2            2      0.25751      0.25428      0.24352            1
+            0            0            0            2            2            2      0.14929
+            0            0            0            2            2            2      0.25751
+  Columns 8 through 9
+            0            0
+            0            0
+            1            1
+            1            1
+      0.84072      0.81428
+      0.25428      0.24352
+</pre><img vspace="5" hspace="5" src="blktridiag_demo_06.png"> <h2>A block tridiagonal matrix with varying 3x2 non-square blocks<a name="7"></a></h2><pre class="codeinput">Amd = reshape(1:18,[3 2 3]);
+Asub = reshape(101:112,[3 2 2]);
+Asup = reshape(201:212,[3 2 2]);
+A = blktridiag(Amd,Asub,Asup);
+
+spy(A)
+full(A)
+</pre><pre class="codeoutput">ans =
+     1     4   201   204     0     0
+     2     5   202   205     0     0
+     3     6   203   206     0     0
+   101   104     7    10   207   210
+   102   105     8    11   208   211
+   103   106     9    12   209   212
+     0     0   107   110    13    16
+     0     0   108   111    14    17
+     0     0   109   112    15    18
+</pre><img vspace="5" hspace="5" src="blktridiag_demo_07.png"> <p class="footer"><br>
+            Published with MATLAB&reg; 7.4<br></p>
+      </div>
+      <!--
+##### SOURCE BEGIN #####
+%% A 10x10 tridiagonal matrix, with 2 on the diagonal, -1 on the off diagonal.
+
+A = blktridiag(2,-1,-1,10);
+
+% The sparsity pattern is correct
+spy(A)
+
+% and the elements are as designated
+full(A)
+
+%% A lower block bidiagonal matrix with replicated blocks
+
+% with 2x2 blocks of ones on the main diagonal, and
+% 2x2 blocks of twos on the sub-diagonal
+
+A = blktridiag(ones(2),2*ones(2),zeros(2),5);
+
+spy(A)
+full(A)
+
+%% A block tridiagonal matrix with replicated blocks
+
+Amd = reshape(1:9,3,3);
+Asub = reshape(11:19,3,3);
+Asup = reshape(21:29,3,3);
+A = blktridiag(Amd,Asub,Asup,4);
+
+spy(A)
+full(A)
+
+%% A tridiagonal matrix with random elements
+
+Amd = rand(1,1,7);
+Asub = rand(1,1,6);
+Asup = rand(1,1,6);
+A = blktridiag(Amd,Asub,Asup);
+
+spy(A)
+full(A)
+
+%% A block tridiagonal matrix with distinct elements
+
+Amd = reshape(1:27,[3 3 3]);
+Asub = reshape(101:118,[3 3 2]);
+Asup = reshape(201:218,[3 3 2]);
+A = blktridiag(Amd,Asub,Asup);
+
+spy(A)
+full(A)
+
+%% A block tridiagonal matrix with 2x3 fixed non-square blocks
+
+Amd = rand(2,3);
+Asub = 2*ones(2,3);
+Asup = ones(2,3);
+A = blktridiag(Amd,Asub,Asup,3);
+
+spy(A)
+full(A)
+
+%% A block tridiagonal matrix with varying 3x2 non-square blocks
+Amd = reshape(1:18,[3 2 3]);
+Asub = reshape(101:112,[3 2 2]);
+Asup = reshape(201:212,[3 2 2]);
+A = blktridiag(Amd,Asub,Asup);
+
+spy(A)
+full(A)
+
+
+##### SOURCE END #####
+-->
+   </body>
+</html>
