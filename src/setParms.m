@@ -12,6 +12,15 @@ end
 
 
 % general algorithm parameteres
+
+if(~isfield(params, 'pFlag'))
+    params.pFlag = 0;
+end
+
+if(~isfield(params, 'pSparse'))
+    params.pSparse = 1; % this is ok, since run_example modifes it anyway
+end
+
 if(~isfield(params, 'relOpt'))
     params.relOpt = 1e-5;
 end
