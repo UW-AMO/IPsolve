@@ -55,3 +55,13 @@ fprintf('discrepancy: %5.2e\n', normErr);
 % where lambda and alpha are given by the user. 
 
 
+
+
+
+
+
+%% If your approach worked, try modifying loadPenalty to add an elastic net
+% penalty. this will allow you to run a command such as 
+%  xLasso = run_example( A, b, 'l2', 'enet', [], params );
+
+
