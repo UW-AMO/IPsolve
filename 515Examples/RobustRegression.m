@@ -133,7 +133,7 @@ fprintf('LS error: %5.2e, Ridge error: %5.2e, Huber error: %5.2e\n', errLS, errR
 par.kappa = 1; % huber penalty parameter
 par.mMult = 1; % curvature coefficient
 par.size = m;  % size of the vector (in this case, residuals) 
-[Mh, Ch, ch, bh, Bh, funH] = loadPenalty(A, b, 'huber', par);
+[Mh, Ch, ch, bh, Bh, funH] = loadPenalty(A, -b, 'huber', par);
 
 % next load l1 for x coefficients
 % first load huber for residuals
@@ -157,11 +157,11 @@ q = 10*ones(L, 1);
 u = zeros(K, 1) + .01;
 x   = ones(n, 1);
 
-[xHuberL1, uOut, qOut, ~, ~, ~] = ipSolverBarrier(linTerm, bfull, -Bfull, cfull, Cfull', Mfull, q, u, r, w, x, params);
+[xHuberL1, uOut, qOut, ~, ~, ~] = ipSolverBarrier(linTerm, bfull, Bfull, cfull, Cfull', Mfull, q, u, r, w, x, params);
 errHuberL1 = errFunc(xHuberL1);
 fprintf('LS error: %5.2e, Ridge error: %5.2e, Huber error: %5.2e, L1 Huber Error: %5.2e\n', errLS, errRidge, errHuber, errHuberL1);
 
 %% running L1 huber regression using full functionality of IPsolve
 
-xHuberL1 = run_example( A, b, 'huber', 'l1', [], params );
+%xHuberL1 = run_example( A, b, 'huber', 'l1', [], params );
 
