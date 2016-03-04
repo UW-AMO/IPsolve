@@ -90,13 +90,13 @@ xOut = reshape(yOut, n, N);
 
 
 
-% Robust kalman smoother
-params.kappa = 0.1;
+% Make a robust Kalman smoother - the code will automatically plot it.  
 tic
-[ yOut ~] = run_example( Hmat, meas, 'huber', 'l2', [], params );
+[ yOut ~] = run_example( Hmat, meas, 'l2', 'l2', [], params );
 toc
 
-xOutSparse = reshape(yOut, n, N);
+xOutRobust = reshape(yOut, n, N);
+
 
 
 
@@ -107,8 +107,8 @@ xOutSparse = reshape(yOut, n, N);
     hold on
     plot(t', x_true(2,:)', 'r-', 'Linewidth',2 );
     plot(t', z(1,:)', 'ko', 'Linewidth', 2);
-    plot(t', xOut(2,:)', 'b--' );
-    plot(t', xOutSparse(2,:)', 'm-.', 'Linewidth',2 );
+    plot(t', xOut(2,:)', 'b--', 'Linewidth', 2);
+    plot(t', xOutRobust(2,:)', 'm-.', 'Linewidth',2 );
 
     %     plot(t', - ones(N,1), 'b-');
     %      plot(t', ones(N,1), 'b-');
