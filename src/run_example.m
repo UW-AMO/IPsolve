@@ -157,7 +157,7 @@ if(explicit)
 %         sIn = 10*ones(L, 1);
 %     end
     qIn = 10*ones(L, 1);
-    uIn = zeros(K, 1) + .01;
+    uIn = zeros(K, 1) + 1e-6;
     
     yIn   = ones(n, 1);
     

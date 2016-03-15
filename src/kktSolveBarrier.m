@@ -63,6 +63,9 @@ else
 end
 
 
+% need to improve this for infinity norm!!
+% idea: implement Tinv instead of T. 
+
 
 T       = MM + C*QD*C';
 % if two pieces, exploit structure
