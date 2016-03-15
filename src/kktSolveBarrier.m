@@ -64,10 +64,24 @@ end
 
 
 % need to improve this for infinity norm!!
-% idea: implement Tinv instead of T. 
-
+% idea: implement Tinv instead of T. C'*C is sparse, but CC' is not. 
+% simplex = 1;
+% if(simplex)
+%     T1 = MM + C(:, 3:end)*QD(3:end,3:end)*C(:,3:end)';
+%     T1inv = T1\speye(size(MM,1));
+%     T1invC = T1inv*C(:,1:2);
+%    % CT1inv = C(:,1:2)'*T1inv;
+%     Dinv = QD(1:2, 1:2)\speye(2) + C(:,1:2)'*T1invC;
+%     Tinv = @(x)T1inv*(x - (C(:,1:2)*(Dinv*(T1invC'*x))));
+%     T = Tinv(speye(size(MM)));
+% else
+%     T       = MM + C*QD*C';
+% end
 
 T       = MM + C*QD*C';
+
+
+    
 % if two pieces, exploit structure
 if(pFlag)
     Tm = T(1:m, 1:m);
@@ -100,8 +114,8 @@ else
 %    SpOmegaMod = 0*speye(n);
 end
 
-
 utr = u - T\r2;
+
 if(pFlag)
     r5      = -Bm'*utr(1:m) - Bn'*utr(m+1:end) - Awr4r -linTerm;
 else
