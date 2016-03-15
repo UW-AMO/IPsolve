@@ -131,7 +131,7 @@ if(explicit)
     
     %%%%%%
     
-    K = size(Bv, 1);
+  %  K = size(Bv, 1);
     params.pFlag = pFlag;
     params.m = m;
     params.n = n;
@@ -144,14 +144,14 @@ if(explicit)
         Bm = Bv;
         params.B2 = Bw;
         params.M2 = Mw;
-        K = K + size(Bw,1);
+ %       K = K + size(Bw,1);
     else
         b = bv; Bm = Bv; c = cv; C = Cv; M = Mv;
     end
     C = C';
+    K = size(Bw,1) + size(Bv,1); % full u dimension
     
-    
-    L = size(C, 2);
+    L = size(C, 2); % full constraint dimension
     
 %     if(~barrier)
 %         sIn = 10*ones(L, 1);
