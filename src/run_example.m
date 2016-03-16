@@ -19,7 +19,9 @@ if(nargin < 6)
     error('need to have six arguments. check that you specified linTerm');
 end
 
-
+if(strcmp(processPLQ, 'infnorm'))
+   params.simplex = 1;  
+end
 
 
 REVISION = '$Rev: 2 $';

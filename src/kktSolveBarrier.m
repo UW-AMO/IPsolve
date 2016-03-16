@@ -150,7 +150,7 @@ if pFlag && n > m && pSparse &&~inexact
     if(simplex)
 %        @(x)T1inv*(x - (C(m+1:end,1:2)*(Dinv*(T1invC'*x))));
        BnT1inv = Bn'*T1inv; 
-        BTB = BnT1inv*Bn - (BnT1inv*C(m+1:end,1:2))*(Dinv*(T1invC'*Bn))+ delta*speye(size(Bn,2));;
+        BTB = BnT1inv*Bn - (BnT1inv*C(m+1:end,1:2))*(Dinv*(T1invC'*Bn))+ A*WR*A'+ delta*speye(size(Bn,2));
  %       BTB = Bn'*(TninvF(Bn)) +A*WR*A' + delta*speye(size(Bn,2));
     else
         BTB = Bn'*(TninvF(Bn)) +A*WR*A' + delta*speye(size(Bn,2));
