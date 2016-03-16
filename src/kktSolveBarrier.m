@@ -74,7 +74,7 @@ if(simplex)
         % CT1inv = C(:,1:2)'*T1inv;
         Dinv = QD(1:2, 1:2)\speye(2) + C(:,1:2)'*T1invC;
         TinvF = @(x)T1inv*(x - (C(:,1:2)*(Dinv*(C(:,1:2)'*(T1inv*x)))));
-    else % asCsumes simplex is on the regularizer (for now)
+    else % assumes simplex is on the regularizer (for now)
         Tm = MM(1:m,1:m) + C(1:m,:)*QD*C(1:m,:)';
         Tminv = myInvDiag(Tm);
         TminvF = @(x)Tminv*x; 
@@ -82,13 +82,13 @@ if(simplex)
         T1inv = myInvDiag(T1);
         T1invC = T1inv*C(m+1:end,1:2);
         Dinv = myInvDiag(myInvDiag(QD(1:2, 1:2)) + C(m+1:end,1:2)'*T1invC);
-        TninvF = @(x)T1inv*(x - (C(m+1:end,1:2)*(Dinv*(C(m+1:end,1:2)'*(T1inv*x)))));
+        TninvF = @(x)T1inv*(x - (C(m+1:end,1:2)*(Dinv*(T1invC'*x))));
         TinvF = @(x)funcStack(x, TminvF, TninvF, m); %funcstack!
 %        TinvF = @(x)[ TminvF*x(1:m,:); TninvF(x(m+1:end),:)];
     end
 else
     T       = MM + C*QD*C';
-    Tinv    = myInvDiag(T);
+    Tinv    = T\speye(size(T));
     TinvF   = @(x)Tinv*x; 
 end
 

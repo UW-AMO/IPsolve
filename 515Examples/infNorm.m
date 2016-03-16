@@ -11,6 +11,7 @@ clear all ;close all; clc
   params.proc_lambda = lam;
   params.simplex = 1;
   xLasso = run_example( A, b, 'l2', 'infnorm', [], params );
+  % careful, assumes the simplex rows are coming first in the C... 
   
   plot(1:n, x0, 1:n, xLasso)
   legend('truth', 'IPsolve solution')
