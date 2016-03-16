@@ -147,7 +147,14 @@ end
 % compute dy
 if pFlag && n > m && pSparse &&~inexact
     %    BTB = Bn'*(Tn\Bn) + SpOmegaMod; % large sparse matrix
-    BTB = Bn'*(TninvF(Bn)) +A*WR*A' + delta*speye(size(Bn,2));
+    if(simplex)
+%        @(x)T1inv*(x - (C(m+1:end,1:2)*(Dinv*(T1invC'*x))));
+       BnT1inv = Bn'*T1inv; 
+        BTB = BnT1inv*Bn - (BnT1inv*C(m+1:end,1:2))*(Dinv*(T1invC'*Bn))+ delta*speye(size(Bn,2));;
+ %       BTB = Bn'*(TninvF(Bn)) +A*WR*A' + delta*speye(size(Bn,2));
+    else
+        BTB = Bn'*(TninvF(Bn)) +A*WR*A' + delta*speye(size(Bn,2));
+    end
     
     Air4 = BTB\r5;
     r = Bm*Air4;
@@ -175,9 +182,23 @@ else
     if(pFlag)
         if(inexact)
             if(pCon)
-                BTB = Bn'*(TninvF(Bn)) + A*WR*A' + delta*speye(size(Bn,2));
+                if(simplex)
+                      BnT1inv = Bn'*T1inv; 
+                      BTB = BnT1inv*Bn - (BnT1inv*C(m+1:end,1:2))*(Dinv*(T1invC'*Bn))+ delta*speye(size(Bn,2));
+                    
+                else
+                    BTB = Bn'*(TninvF(Bn)) + A*WR*A' + delta*speye(size(Bn,2));
+                end
             else
+               % tic
+               if(simplex)
+                      BnT1inv = Bn'*T1inv; 
+                      BTB = BnT1inv*Bn - (BnT1inv*C(m+1:end,1:2))*(Dinv*(T1invC'*Bn))+ delta*speye(size(Bn,2));
+
+               else
                 BTB = Bn'*(TninvF(Bn)) + delta*speye(size(Bn,2));
+               end
+                %toc
             end
             Omega   =  @(x) BTB*x + Bm'*(TminvF((Bm*x))) + params.delta*x;
  %           dTn = diag(Tn);

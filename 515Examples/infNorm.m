@@ -1,6 +1,6 @@
 % set up classic compressive sensing problem 
 clear all ;close all; clc
-  m = 120; n = 512; k = 20; % m rows, n cols, k nonzeros.
+  m = 500; n = 2000; k = 100; % m rows, n cols, k nonzeros.
   p = randperm(n); x0 = zeros(n,1); x0(p(1:k)) = sign(randn(k,1));
   A  = randn(m,n); [Q,R] = qr(A',0);  A = Q';
   b  = A*x0 + 0.005 * randn(m,1);
@@ -10,6 +10,8 @@ clear all ;close all; clc
   %% IP solve: full functionality for lasso problem 
   params.proc_lambda = lam;
   params.simplex = 1;
+  params.inexact = 0;
+  params.optTol = 1e-7;
   xLasso = run_example( A, b, 'l2', 'infnorm', [], params );
   % careful, assumes the simplex rows are coming first in the C... 
   
