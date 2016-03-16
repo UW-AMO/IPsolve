@@ -8,8 +8,9 @@ function [dq, du, dr, dw, dy, params] = kktSolveBarrier(linTerm, b, Bm, c, C, Mf
 
 
 inexact = params.inexact;
-
+simplex = params.simplex;
 delta = params.delta;
+
 
 
 %useChol = params.useChol;
@@ -65,29 +66,49 @@ end
 
 % need to improve this for infinity norm!!
 % idea: implement Tinv instead of T. C'*C is sparse, but CC' is not. 
-% simplex = 1;
-% if(simplex)
-%     T1 = MM + C(:, 3:end)*QD(3:end,3:end)*C(:,3:end)';
-%     T1inv = T1\speye(size(MM,1));
-%     T1invC = T1inv*C(:,1:2);
-%    % CT1inv = C(:,1:2)'*T1inv;
-%     Dinv = QD(1:2, 1:2)\speye(2) + C(:,1:2)'*T1invC;
-%     Tinv = @(x)T1inv*(x - (C(:,1:2)*(Dinv*(T1invC'*x))));
-%     T = Tinv(speye(size(MM)));
-% else
-%     T       = MM + C*QD*C';
-% end
+if(simplex)
+    if(~pFlag)
+        T1 = MM + C(:, 3:end)*QD(3:end,3:end)*C(:,3:end)';
+        T1inv = myInvDiag(T1);
+        T1invC = T1inv*C(:,1:2);
+        % CT1inv = C(:,1:2)'*T1inv;
+        Dinv = QD(1:2, 1:2)\speye(2) + C(:,1:2)'*T1invC;
+        TinvF = @(x)T1inv*(x - (C(:,1:2)*(Dinv*(C(:,1:2)'*(T1inv*x)))));
+    else % asCsumes simplex is on the regularizer (for now)
+        Tm = MM(1:m,1:m) + C(1:m,:)*QD*C(1:m,:)';
+        Tminv = myInvDiag(Tm);
+        TminvF = @(x)Tminv*x; 
+        T1 = MM(m+1:end, m+1:end) + C(m+1:end, 3:end)*QD(3:end,3:end)*C(m+1:end,3:end)';
+        T1inv = myInvDiag(T1);
+        T1invC = T1inv*C(m+1:end,1:2);
+        Dinv = myInvDiag(myInvDiag(QD(1:2, 1:2)) + C(m+1:end,1:2)'*T1invC);
+        TninvF = @(x)T1inv*(x - (C(m+1:end,1:2)*(Dinv*(C(m+1:end,1:2)'*(T1inv*x)))));
+        TinvF = @(x)funcStack(x, TminvF, TninvF, m); %funcstack!
+%        TinvF = @(x)[ TminvF*x(1:m,:); TninvF(x(m+1:end),:)];
+    end
+else
+    T       = MM + C*QD*C';
+    Tinv    = myInvDiag(T);
+    TinvF   = @(x)Tinv*x; 
+end
 
-T       = MM + C*QD*C';
+%Torig       = MM + C*QD*C';
 
 
     
 % if two pieces, exploit structure
 if(pFlag)
-    Tm = T(1:m, 1:m);
-    Tn = T(m+1:end, m+1:end);
-    Bn = params.B2;
+     Bn = params.B2;
+     if(~simplex)
+         Tm = T(1:m,1:m);
+         Tminv = Tinv(1:m, 1:m);
+         TminvF = @(x)Tminv*x;
+         Tn = T(m+1:end, m+1:end);
+         Tninv = Tinv(m+1:end, m+1:end);
+         TninvF = @(x)Tninv*x;
+     end
 end
+
 
 
 % here we go!
@@ -114,7 +135,7 @@ else
 %    SpOmegaMod = 0*speye(n);
 end
 
-utr = u - T\r2;
+utr = u - TinvF(r2); % should be defined regardless
 
 if(pFlag)
     r5      = -Bm'*utr(1:m) - Bn'*utr(m+1:end) - Awr4r -linTerm;
@@ -126,7 +147,7 @@ end
 % compute dy
 if pFlag && n > m && pSparse &&~inexact
     %    BTB = Bn'*(Tn\Bn) + SpOmegaMod; % large sparse matrix
-    BTB = Bn'*(Tn\Bn) +A*WR*A' + delta*speye(size(Bn,2));
+    BTB = Bn'*(TninvF(Bn)) +A*WR*A' + delta*speye(size(Bn,2));
     
     Air4 = BTB\r5;
     r = Bm*Air4;
@@ -154,11 +175,11 @@ else
     if(pFlag)
         if(inexact)
             if(pCon)
-                BTB = Bn'*(Tn\Bn) + A*WR*A' + delta*speye(size(Bn,2));
+                BTB = Bn'*(TninvF(Bn)) + A*WR*A' + delta*speye(size(Bn,2));
             else
-                BTB = Bn'*(Tn\Bn) + delta*speye(size(Bn,2));
+                BTB = Bn'*(TninvF(Bn)) + delta*speye(size(Bn,2));
             end
-            Omega   =  @(x) BTB*x + Bm'*(Tm\(Bm*x)) + params.delta*x;
+            Omega   =  @(x) BTB*x + Bm'*(TminvF((Bm*x))) + params.delta*x;
  %           dTn = diag(Tn);
 %            elt = max(max(dTn(1:m), diag(Tm)));
 %            eltTwo = max(max(diag(Tn)), max(diag(Tm)));
@@ -191,7 +212,7 @@ else
 
             
         else
-            Omega   =  Bn'*(Tn\Bn)+ Bm'*(Tm\Bm) + A*WR*A'+delta*speye(size(Bm,2));
+            Omega   =  Bn'*(TninvF(Bn))+ Bm'*(TminvF(Bm)) + A*WR*A'+delta*speye(size(Bm,2));
             OmegaChol = chol(Omega);
             dy      = OmegaChol\(OmegaChol'\r5);
         end
@@ -199,9 +220,9 @@ else
         if(inexact)
             if(pCon)
                 
-                Omega   =  @(x) A*(WR*(A'*x)) + Bm'*(T\(Bm*x)) + delta*x;
+                Omega   =  @(x) A*(WR*(A'*x)) + Bm'*(TinvF(Bm*x)) + delta*x;
             else
-                Omega   =  @(x) Bm'*(T\(Bm*x)) + delta*x;
+                Omega   =  @(x) Bm'*(TinvF(Bm*x)) + delta*x;
             end
 
       %      preCon = @(x) x/delta - Bm'*((T + (params.Anorm^2/delta)*speye(size(T)))\(Bm*x))/delta^2;
@@ -214,9 +235,9 @@ else
             
         else
             if(pCon)
-                Omega   = Bm'*(T\Bm) + A*WR*A' + delta*speye(size(Bm,2));
+                Omega   = Bm'*(TinvF(Bm)) + A*WR*A' + delta*speye(size(Bm,2));
             else
-                Omega   = Bm'*(T\Bm) + delta*speye(size(Bm,2));
+                Omega   = Bm'*(TinvF(Bm)) + delta*speye(size(Bm,2));
             end
             %dy = Omega\r6;
             OmegaChol = chol(Omega);
@@ -245,9 +266,9 @@ end
 
 % compute du
 if(pFlag)
-    du      = T\(-r2 + [Bm*dy; Bn*dy]);
+    du      = TinvF(-r2 + [Bm*dy; Bn*dy]);
 else
-    du      = T\(-r2 + Bm*dy);
+    du      = TinvF(-r2 + Bm*dy);
 end
 
 

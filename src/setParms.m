@@ -12,6 +12,9 @@ end
 
 
 % general algorithm parameteres
+if(~isfield(params, 'simplex'))
+    params.simplex = 0;
+end
 
 if(~isfield(params, 'pFlag'))
     params.pFlag = 0;
