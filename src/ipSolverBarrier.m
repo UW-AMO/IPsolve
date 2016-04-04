@@ -20,7 +20,7 @@ yIn = y;
 relOpt = params.relOpt;
 epsComp = params.optTol;
 epsF = params.optTol;
-epsMu = params.optTol;
+epsMu = 0*params.optTol; % turned off
 
 
 % cg interior parameter

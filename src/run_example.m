@@ -5,7 +5,7 @@
 % -----------------------------------------------------------------------------
 
 
-function [ yOut, normFout] = run_example( H, z, measurePLQ, processPLQ, linTerm, params )
+function [ yOut, normFout, objFun] = run_example( H, z, measurePLQ, processPLQ, linTerm, params )
 %RUN_EXAMPLE Runs simple examples for ADMM comparison
 %   Input:
 %       H: linear model
@@ -130,7 +130,7 @@ if(explicit)
         params.objFun = @(x) linTerm'*x + mFun(z - H*x);
     end
     
-    
+    objFun = params.objFun;
     %%%%%%
     
   %  K = size(Bv, 1);
@@ -151,8 +151,11 @@ if(explicit)
         b = bv; Bm = Bv; c = cv; C = Cv; M = Mv;
     end
     C = C';
-    K = size(Bw,1) + size(Bv,1); % full u dimension
-    
+    if(pFlag)
+        K = size(Bw,1) + size(Bv,1); % full u dimension
+    else
+       K = size(Bv,1); 
+    end
     L = size(C, 2); % full constraint dimension
     
 %     if(~barrier)
