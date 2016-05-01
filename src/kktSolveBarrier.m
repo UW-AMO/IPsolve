@@ -260,7 +260,7 @@ else
             else
                 Omega   = Bm'*(TinvF(Bm)) + delta*speye(size(Bm,2));
             end
-            %dy = Omega\r6;
+%            dy = Omega\r5;
             OmegaChol = chol(Omega);
             dy      = OmegaChol\(OmegaChol'\r5);
         end

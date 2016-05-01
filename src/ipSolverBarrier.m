@@ -21,7 +21,7 @@ relOpt = params.relOpt;
 epsComp = params.optTol;
 epsF = params.optTol;
 epsMu = 0*params.optTol; % turned off
-
+info.primal = [];
 
 % cg interior parameter
 params.tolqual = 1e-5;
@@ -332,7 +332,7 @@ while ( ~ converge ) && (itr < max_itr)
     w = w_new; wOut = w;
     info.muOut = params.mu;
     info.itr = itr;
-    
+    info.primal = [info.primal; params.objFun(y)];
 
     
     %% SASHA check
@@ -370,8 +370,8 @@ while ( ~ converge ) && (itr < max_itr)
  else
      converged = 0;
  end
- converge = converged || (G1 < epsComp) || (G_new < epsF) || params.mu < epsMu|| G_new < relOpt*G_in;
-
+% converge = converged || (G1 < epsComp) || (G_new < epsF) || params.mu < epsMu|| G_new < relOpt*G_in;
+ converge = converged || (G1 < epsComp) || (G_new < epsF);% || params.mu < epsMu|| G_new < relOpt*G_in;
 	
  
  if(converge)

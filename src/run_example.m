@@ -5,7 +5,7 @@
 % -----------------------------------------------------------------------------
 
 
-function [ yOut, normFout, objFun] = run_example( H, z, measurePLQ, processPLQ, linTerm, params )
+function [ yOut, uOut, normFout, objFun, info] = run_example( H, z, measurePLQ, processPLQ, linTerm, params )
 %RUN_EXAMPLE Runs simple examples for ADMM comparison
 %   Input:
 %       H: linear model
@@ -195,14 +195,20 @@ if(explicit)
     
     
     params.mu = 0;
-    
+
     Fin = kktSystemFunc(linTerm, b, Bm, c, C, Mv, qIn, uIn, rIn, wIn, yIn,params);    
     info.pcgIter = [];
     params.info = info;
     [yOut, uOut, qOut, rOut, wOut, info] = ipSolverFunc(linTerm, b, Bm, c, C, Mv, qIn, uIn, rIn, wIn, yIn, params);
+   % hist = info.primal;
     Fout = kktSystemFunc(linTerm, b, Bm, c, C, Mv, qOut, uOut, rOut, wOut, yOut, params);
     
-    
+        in.qIn = qIn;
+    in.uIn = uIn;
+    in.rIn = rIn;
+    in.wIn = wIn;
+    in.yIn = yIn;
+    info.in = in;
     ok = norm(Fout) < 1e-6;
     normFout = norm(Fout); % Added by NRK
     
