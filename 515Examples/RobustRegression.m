@@ -42,19 +42,27 @@ fprintf('LS error: %5.2e, Ridge error: %5.2e\n', errLS, errRidge);
 
 params.proc_lambda = lam;
 params.proc_mMult = lam;
-xLasso =  run_example( A, b, 'l2', 'l1', [], params );
+
 xHuber =  run_example( A, b, 'huber', [], [], params );
-xHuberRidge = run_example( A, b, 'huber', 'l2', [], params );
-xHuberLasso = run_example( A, b, 'huber', 'l1', [], params );
-
-errLasso = errFunc(xLasso);
 errHuber = errFunc(xHuber);
-errHuberRidge = errFunc(xHuberRidge);
-errHuberLasso = errFunc(xHuberLasso);
 
-fprintf('LS error: %7.1e, Ridge error: %7.1e, Lasso error: %7.1e\n', errLS, errRidge, errLasso);
+fprintf('LS error: %7.1e, Huber error: %7.1e, Lasso error: %7.1e\n', errLS, errHuber);
 
-fprintf('Huber error: %7.1e, Huber Ridge error: %7.1e, Huber Lasso error: %7.1e\n', errHuber, errHuberRidge, errHuber);
+
+
+
+% %% Adding regularization
+% xLasso =  run_example( A, b, 'l2', 'l1', [], params );
+% xHuberRidge = run_example( A, b, 'huber', 'l2', [], params );
+% xHuberLasso = run_example( A, b, 'huber', 'l1', [], params );
+% 
+% errLasso = errFunc(xLasso);
+% errHuberRidge = errFunc(xHuberRidge);
+% errHuberLasso = errFunc(xHuberLasso);
+% 
+% fprintf('LS error: %7.1e, Ridge error: %7.1e, Lasso error: %7.1e\n', errLS, errRidge, errLasso);
+% 
+% fprintf('Huber error: %7.1e, Huber Ridge error: %7.1e, Huber Lasso error: %7.1e\n', errHuber, errHuberRidge, errHuber);
 
 %%
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
