@@ -16,6 +16,10 @@ if(~isfield(params, 'simplex'))
     params.simplex = 0;
 end
 
+if(~isfield(params, 'uIn'))
+    params.uIn = 1e-6; 
+end
+
 if(~isfield(params, 'pFlag'))
     params.pFlag = 0;
 end

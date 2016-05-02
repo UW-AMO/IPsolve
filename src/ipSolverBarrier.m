@@ -176,7 +176,7 @@ while ( ~ converge ) && (itr < max_itr)
     ok        = 0;
     kount     = 0;
     max_kount = 20;
-    beta = 0.2;
+    beta = 0.1;
     lambda = lambda/beta;
     while (~ok) && (kount < max_kount)
         kount  = kount + 1;

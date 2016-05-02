@@ -168,16 +168,16 @@ case 'l2m' % penalize everybody except the last element
         
     case 'logreg'
         %        scale    = params.scale;
-          alpha = 1e-1;
-          
+          alpha = 0.5;
+        epsil = 0; 
         M    = @(x)logRegFunc(x,alpha);
         %        M    = opFunction(m, m, M);
         %C    = zeros(1,m); % easy to satisfy 0'*u <= 1
         %c    = 1;
         C = [speye(m); -speye(m)];
-        c = [ones(m, 1); zeros(m,1)]; %
+        c = [ones(m, 1); epsil*ones(m,1)]; %
         b = zeros(m,1);
-        B = speye(m);
+        B = -speye(m);
         fun = @(x) sum(log(1+exp(x)));
         prox_g = @(y,gamma)box_proj_general(y, 1-alpha, alpha); 
         
