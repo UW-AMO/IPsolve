@@ -7,7 +7,7 @@ cd 515Examples
 m = 1000;
 n = 700; 
 A = randn(m,n); 
-x0 = rand(n,1); % nonnegative, just for fun. 
+x0 = randn(n,1); 
 
 % noise and outlier parameters
 sig = .05; % gaussian noise variance
@@ -43,10 +43,11 @@ fprintf('LS error: %5.2e, Ridge error: %5.2e\n', errLS, errRidge);
 params.proc_lambda = lam;
 params.proc_mMult = lam;
 
+%params.meas_kappa = 0.05;
 xHuber =  run_example( A, b, 'huber', [], [], params );
 errHuber = errFunc(xHuber);
 
-fprintf('LS error: %7.1e, Huber error: %7.1e, Lasso error: %7.1e\n', errLS, errHuber);
+fprintf('LS error: %7.1e, Huber error: %7.1e\n', errLS, errHuber);
 
 
 

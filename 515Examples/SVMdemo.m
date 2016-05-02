@@ -16,7 +16,7 @@ corrFunc = @(X,y,w) 100*sum(y.*sign(X*w) >0)/length(y);
 %% run IPsolve
 yA = sparse(1:nInst, 1:nInst, y)*X; % pre-multiplied data
 params.proc_mMult = 1e1; % small least squares regularization
-params.proc_lambda = 1e0; % 1-norm regularization
+%params.proc_lambda = 5e1; % 1-norm regularization
 
 wSVM2 =  run_example( yA, ones(nInst,1), 'hinge', 'l2', [], params );
 
