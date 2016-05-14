@@ -43,7 +43,7 @@ fprintf('LS error: %5.2e, Ridge error: %5.2e\n', errLS, errRidge);
 params.proc_lambda = lam;
 params.proc_mMult = lam;
 
-%params.meas_kappa = 0.05;
+params.meas_kappa = 0.05;
 xHuber =  run_example( A, b, 'huber', [], [], params );
 errHuber = errFunc(xHuber);
 

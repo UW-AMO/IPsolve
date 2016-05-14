@@ -14,7 +14,7 @@ switch(signal)
         dt    = numP*2*pi / N;  % time between measurement points
         sigma =  .4;       % standard deviation of measurement noise
         sigmaMod = 0.1;    % sigma we tell smoother
-        outliers = 0;
+        outliers = 1;
         if(outliers)
             out = N*.05;        % percent of outliers
             mag = 5;            % outlier variance
@@ -40,7 +40,7 @@ switch(signal)
         dt    = numP*2*pi / (N*mult);  % time between measurement points
         sigma =  .05;       % standard deviation of measurement noise
         sigmaMod = sigma;   % give nominal variance 
-        outliers = 0;
+        outliers = 1;
         if(outliers)
             out = N*.1;        % percent of outliers
             mag = 5;            % outlier variance

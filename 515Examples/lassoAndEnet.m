@@ -3,8 +3,8 @@ clear all ;close all; clc
 
 wellCond = 1;
 
-  m = 120; n = 512; k = 10;
-  %m = 1200; n = 5120; k = 100; % m rows, n cols, k nonzeros.
+%  m = 80; n = 512; k = 10;
+  m = 2000; n = 5120; k = 200; % m rows, n cols, k nonzeros.
   p = randperm(n); x0 = zeros(n,1); x0(p(1:k)) = sign(randn(k,1));
   A  = randn(m,n); 
   
@@ -20,7 +20,7 @@ wellCond = 1;
   
   %% IP solve: full functionality for lasso problem 
   params.proc_lambda = lam;
-  params.inexact = 0;
+  params.inexact = 1;
   xLasso = run_example( A, b, 'l2', 'l1', [], params );
   
   plot(1:n, x0, 1:n, xLasso)
