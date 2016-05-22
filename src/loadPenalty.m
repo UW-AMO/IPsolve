@@ -122,7 +122,7 @@ switch(penalty)
         
         % function handle to evaluate objective
         fun = @(x) norm(x)^2/(2*mMult);
-        prox_g = @(y,gamma) y;
+        prox_g = @prox_l2s;
 
         
     case 'hinge'

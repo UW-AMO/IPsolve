@@ -157,7 +157,7 @@ if pFlag && n > m && pSparse &&~inexact
     end
     
     Air4 = BTB\r5;
-    r = Bm*Air4;
+    res = Bm*Air4;
     
     % indirect (working) version
     if(inexact)
@@ -166,13 +166,13 @@ if pFlag && n > m && pSparse &&~inexact
         
         %maxElt = max(diag(BTB));
         %precon = diag(max(maxElt*ones(m,1), diag(Tm)));
-        [u, FLAG,RELRES,ITER] = pcg(TBAB, r, params.tolqual, 10000);
+        [u, FLAG,RELRES,ITER] = pcg(TBAB, res, params.tolqual, 10000);
         params.info.pcgIter = [params.info.pcgIter ITER];
         
         % direct working version
     else
         TBAB = Tm + Bm*(BTB\Bm');
-        u = TBAB\r;
+        u = TBAB\res;
     end
     
     dy = Air4 - BTB\(Bm'*u);
