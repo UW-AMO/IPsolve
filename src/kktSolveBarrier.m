@@ -233,7 +233,10 @@ else
 
             
         else
-            Omega   =  Bn'*(TninvF(Bn))+ Bm'*(TminvF(Bm)) + A*WR*A'+delta*speye(size(Bm,2));
+            Omega   =  Bn'*(TninvF(Bn))+ Bm'*(TminvF(Bm)) +delta*speye(size(Bm,2));
+            if(params.constraints)
+                Omega = Omega + A*WR*A';
+            end
             OmegaChol = chol(Omega);
             dy      = OmegaChol\(OmegaChol'\r5);
         end
