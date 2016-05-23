@@ -106,7 +106,7 @@ switch(penalty)
     case 'l2func'
         mMult    = params.mMult;
         M    = @(x)quadFunc(x, mMult*speye(m));
-        C    = zeros(1,m); % easy to satisfy 0'*u <= 1
+        C    = sparse(1,m); % easy to satisfy 0'*u <= 1
         c    = 1;
         b    = zeros(m, 1);
         B    = speye(m);
@@ -115,7 +115,7 @@ switch(penalty)
     case 'l2'
         mMult    = params.mMult;
         M    = mMult*speye(m);
-        C    = zeros(1,m); % easy to satisfy 0'*u <= 1
+        C    = sparse(1,m); % easy to satisfy 0'*u <= 1
         c    = 1;
         b    = zeros(m, 1);
         B    = speye(m);
@@ -142,7 +142,7 @@ switch(penalty)
 case 'l2m' % penalize everybody except the last element
         mMult = params.mMult; 
         M = mMult*speye(m);
-        C    = [zeros(2,m-1) [1; -1]]; % to make u<=0, -u <= 0.
+        C    = [sparse(2,m-1) [1; -1]]; % to make u<=0, -u <= 0.
         c    = 1e-4*ones(2,1);
         b    = zeros(m, 1);
         B    = speye(m);
@@ -156,7 +156,7 @@ case 'l2m' % penalize everybody except the last element
     case 'l1m'
         lam = params.lambda;
         M = 0*speye(m);
-        C = [speye(m); -speye(m); zeros(2,m-1) [1; -1]];
+        C = [speye(m); -speye(m); sparse(2,m-1) [1; -1]];
         c = [lam*ones(2*m, 1); zeros(2,1)];
         b = zeros(m,1);
         B = speye(m);
