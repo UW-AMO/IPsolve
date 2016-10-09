@@ -264,8 +264,12 @@ else
                 Omega   = Bm'*(TinvF(Bm)) + delta*speye(size(Bm,2));
             end
 %            dy = Omega\r5;
-            OmegaChol = chol(Omega);
-            dy      = OmegaChol\(OmegaChol'\r5);
+            try 
+                OmegaChol = chol(Omega);
+                dy      = OmegaChol\(OmegaChol'\r5);
+            catch 
+                dy = Omega\r5;
+            end
         end
     end
     

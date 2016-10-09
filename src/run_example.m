@@ -29,19 +29,20 @@ DATE     = '$Date: 2013-07-01 17:41:32 -0700 (Mon, 01 Jul 2013) $';
 REVISION = REVISION(6:end-1);
 DATE     = DATE(35:50);
 
-t_start = tic;
-
 % lets one use different solvers, in principle 
 % though for now all interface must match.
 kktSystemFunc = @kktSystemBarrier;
 ipSolverFunc  = @ipSolverBarrier;
     
-maxItNonlin = 100;
+maxItNonlin = 500;
 
 explicit = ~(isa(H,'function_handle'));
 
 % new set params function
 params = setParms(params, explicit); 
+if(~params.silent)
+    t_start = tic;
+end
 
 if(explicit)
     m = size(H, 1);
@@ -368,10 +369,13 @@ else
         
         itr = itr + 1;
         
+        
         y = y_new;
     end
     yOut = y_new;
-    toc
+    if(~params.silent)
+        toc
+    end
 end
 
 end

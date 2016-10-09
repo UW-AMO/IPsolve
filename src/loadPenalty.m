@@ -134,7 +134,7 @@ switch(penalty)
         B = speye(m);
         
         % function handle to evaluate objective
-        fun = @(x) lam*sum(pos(x));
+        fun = @(x) lam*sum(pos(-x));
         prox_g = @(y,gamma)box_proj_general(y, lam, 0);
   
         

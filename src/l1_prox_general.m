@@ -5,6 +5,7 @@ function [p, g]= l1_prox_general(y, gamma, lambda)
 
 
 n = length(y); 
+% p = max(y - gamma*lambda, 0) - max( - y - gamma* lambda, 0);
 p = sign(y).*max(abs(y)-gamma*lambda,0);
 
 if(nargout > 1)

@@ -14,7 +14,11 @@ if(nargout > 1)
 %     preg(y==high) = 1/2;
 %     preg(y==low) = 1/2;
 %     g = sparse(1:n,1:n, preg);
+
+
     g = sparse(1:n, 1:n, p==y);
+%     g = speye(n);
+    
     % if you didn't change, jacobian = 1
     % if you were clipped, jacobian = 0. 
     
