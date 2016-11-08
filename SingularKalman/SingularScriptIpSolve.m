@@ -125,7 +125,8 @@ fullVec = [w; meas];
 [mMat,nMat] = size(fullMat);
 
 tic
-yOut = lsqr(mMat,nMat, fullMat, fullVec, 0, 1e-10, 1e-10,1000, 1000, 1); 
+%yOut = lsqr(mMat,nMat, fullMat, fullVec, 0, 1e-10, 1e-10,1000, 1000, 1); 
+yOut = lsqr(fullMat, fullVec);
 timeLSQR = toc;
 
 
@@ -193,7 +194,8 @@ StackMat = [D; lam*Ourmat];
 stackB = [zeros(Dr,1); lam*hatw];
 [mMat, nMat] = size(StackMat);
 tic
-yRelax = lsqr(mMat,nMat, StackMat, stackB, 0, 1e-8, 1e-8,1e12, 1000, 1); 
+%yRelax = lsqr(mMat,nMat, StackMat, stackB, 0, 1e-8, 1e-8,1e12, 1000, 1); 
+yRelax = lsqr(StackMat, stackB);
 timeRelax = toc;
 
 
