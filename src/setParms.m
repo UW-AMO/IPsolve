@@ -9,7 +9,14 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% trimming
+if(~isfield(params, 'trim'))
+    params.trim = 0;
+end
 
+if(~isfield(params, 'h'))
+    params.h = 0;
+end
 
 % general algorithm parameteres
 if(~isfield(params, 'simplex'))

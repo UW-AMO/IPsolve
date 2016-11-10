@@ -10,6 +10,10 @@ if(~params.inexact)
     params.info.pcgIter = -1;
 end
 
+if(params.trim)
+    h = params.h;
+end
+
 converge = 0;
 max_itr = 100;
 gamma   = .01;
@@ -42,9 +46,26 @@ end
 G_in = 0;    
 
 while ( ~ converge ) && (itr < max_itr)
-    
-    
-    [F] = kktSystemBarrier(linTerm, b, Bm, c, C, M, q, u, r, w, y, params);
+
+    if(params.trim)
+        Bmy = Bm*y;
+        kEx = length(Bmy)-params.h;
+        weights = ones(size(Bm,1),1);
+        [~, ind] = sort(Bmy, 'descend');
+        weights(ind(1:kEx)) = 0;
+        if(~params.inexact)
+            Bmt = spdiags(weights, 0, size(Bm,1), size(Bm,1))*Bm;
+        else
+            [m1, n1] = size(Bm);
+            Bmt = @(x,mode)sysMult(x,Bm,weights,mode);
+            Bmt = opFunction(m1, n1, Bmt);
+        end
+        b = weights.*b;
+    else
+        Bmt = Bm;
+    end
+
+    [F] = kktSystemBarrier(linTerm, b, Bmt, c, C, M, q, u, r, w, y, params);
 
     % store norm of initial KKT system
     if(itr == 1)
@@ -97,7 +118,7 @@ while ( ~ converge ) && (itr < max_itr)
 %[ds, dq, du, dr, dw, dy] =  kktSolve(b, Bm, c, C, M, s, q, u, r, w, y, params);
 
 % Two: pcg on schur complement:
-[dq, du, dr, dw, dy, params] =  kktSolveBarrier(linTerm, b, Bm, c, C, M, q, u, r, w, y, params);
+[dq, du, dr, dw, dy, params] =  kktSolveBarrier(linTerm, b, Bmt, c, C, M, q, u, r, w, y, params);
 
 % Three: minres on new system:
 
@@ -219,7 +240,7 @@ while ( ~ converge ) && (itr < max_itr)
 %         end
         
         %        [F] = kktSystem(b, Bm, c, C, M, s_new, q_new, u_new, r_new, w_new, y_new, params);
-        [F_new] = kktSystemBarrier(linTerm, b, Bm, c, C, M, q_new, u_new, r_new, w_new, y_new, params);
+        [F_new] = kktSystemBarrier(linTerm, b, Bmt, c, C, M, q_new, u_new, r_new, w_new, y_new, params);
         
         
         %% STOPPED
@@ -261,7 +282,7 @@ while ( ~ converge ) && (itr < max_itr)
             end
             
             params.useChol = 0;
-            [dq, du, dr, dw, dy, params] =  kktSolveBarrier(linTerm, b, Bm, c, C, M, q_new, u_new, r_new, w_new, y_new, params);
+            [dq, du, dr, dw, dy, params] =  kktSolveBarrier(linTerm, b, Bmt, c, C, M, q_new, u_new, r_new, w_new, y_new, params);
             
             if(any(isnan([dq; du; dr; dw; dy])))
                 error('Nans in IPsolve');
