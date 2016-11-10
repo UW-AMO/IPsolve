@@ -14,21 +14,43 @@ n = length(z0);
 sigma = .5;
 tau = .5;
 ztemp = z0;
+zbar = z0;
 ytemp = y0;
-difference = 1;
-while difference > .01
-    b = ytemp + sigma*D*ztemp;
+conv = 1;
+iter = 0; 
+
+[q,r] = qr(A',0);
+
+AAt = A*A'; 
+%qthatw = q'*hatw; 
+%rrt = r*r';
+t2 = lsqr(AAt, hatw, 1e-10, 1000);
+At2 = A'*t2; 
+
+while conv > 1e-5
+    iter = iter +1;
     params.lambda = sigma;
     
     %updating y
-    [opt, ynew] = run_example(speye(n), b, 'l2', 'l2', [], params);
+    params.silent = 1;
+    b = ytemp + sigma*D*zbar;
+   
+    [ynew] = run_example(speye(n), b, 'l2', 'l2', [], params);
     
-    %updating z
+    %updating z using QR + single what solution. 
     c = ztemp - tau*D'*ynew;
-    znew = SingularSystemSolver(A, hatw, c);
+    t1 = c-q*(q'*c);
+    znew = t1+At2;
+
     
-    difference = abs(ztemp - znew);
     
+%    znew = SingularSystemSolver(A, hatw, c,At2,q);
+    zbar = 2*znew - ztemp;
+
+    conv = norm(ztemp - znew)/tau + norm(ytemp-ynew)/sigma;
+
+    
+    fprintf('iter: %d, diff: %7.3e\n', iter, conv); 
     ztemp = znew;
     ytemp = ynew;
 end

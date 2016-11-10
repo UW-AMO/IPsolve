@@ -12,7 +12,7 @@ gamma = 1;
 signalFunc = @(x) exp(sin(4*x))
 box = [-1,1]; % lower, upper 
 numP = 4;
-N     = 5;        % number of measurement time points
+N     = 100;        % number of measurement time points
 dt    = numP*2*pi / (4*N);  % time between measurement points
 sigma =  .1;       % standard deviation of measurement noise
 sigmaMod = 0.1;    % sigma we tell smoot
@@ -59,4 +59,8 @@ H = [1 0];
 
 xopt = CPSolver(D, A, hatw, sparse(Dc, 1), sparse(Dr, 1));
 
-plot(xopt)
+%% extraction and plotting
+[ statesoln, vsoln, wsoln ] = extractor( m, n,N, xopt );
+
+figure()
+plot(statesoln(1,:))
