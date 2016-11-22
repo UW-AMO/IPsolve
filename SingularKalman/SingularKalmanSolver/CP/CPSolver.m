@@ -39,7 +39,7 @@ while conv > 1e-5
     
     %updating z using QR + single what solution. 
     c = ztemp - tau*D'*ynew;
-    t1 = c-q*(q'*c);
+    t1 = c-q*(q'*c); % orthogonal project onto null(A). 
     znew = t1+At2;
 
     
