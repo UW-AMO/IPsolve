@@ -10,6 +10,10 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
+% get covariance or not
+if(~isfield(params,'getCov'))
+    params.getCov = 0;
+end
 
 % general algorithm parameteres
 if(~isfield(params, 'simplex'))

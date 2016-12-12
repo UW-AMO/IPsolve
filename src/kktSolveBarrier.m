@@ -7,6 +7,7 @@
 function [dq, du, dr, dw, dy, params] = kktSolveBarrier(linTerm, b, Bm, c, C, Mfun, q, u, r, w, y, params)
 
 
+getCov = params.getCov; %whether we want to get covariance matrix
 inexact = params.inexact;
 simplex = params.simplex;
 delta = params.delta;
@@ -158,6 +159,7 @@ if pFlag && n > m && pSparse &&~inexact
     
     Air4 = BTB\r5;
     res = Bm*Air4;
+            
     
     % indirect (working) version
     if(inexact)
@@ -302,5 +304,8 @@ end
 
 %compute dq 
 dq      = (r1 + Q*C'*du)./d;
+if(params.getCov)
+    params.Omega = Omega;
+end
 
 end

@@ -127,7 +127,7 @@ params.k = w;
 
 % regular kalman smoother
 tic
-[ yOut ~] = run_example( Hmat, meas, 'l2', 'l2', [], params );
+[ yOut, uOut, ~, ~, infoL2] = run_example( Hmat, meas, 'l2', 'l2', [], params );
 toc
 
 xOut = reshape(yOut, n, N); % nominal estimate
@@ -136,12 +136,12 @@ xOut = reshape(yOut, n, N); % nominal estimate
 % Robust Kalman smoother - the code will automatically plot it.
 % Huber huber!!
 tic
-[ yOut ~] = run_example( Hmat, meas, measPLQ, procPLQ, [], params );
+[ yOut, uOut, ~, ~, infoPLQ] = run_example( Hmat, meas, measPLQ, procPLQ, [], params );
 toc
 
 xOutRobust = reshape(yOut, n, N);
 
-
+params.getCov = 1; % get me some covariance
 params.constraints = 1;
 A = kron(speye(N), conA);
 a = kron(ones(N,1), cona);
@@ -149,12 +149,12 @@ params.A = A'; % historical artifact
 params.a = a; 
 
 tic
-[ yOut ~] = run_example( Hmat, meas, 'l2', 'l2', [], params );
+[ yOut, uOut, ~, ~, infoL2] = run_example( Hmat, meas, 'l2', 'l2', [], params );
 toc
 xOutCon = reshape(yOut, n, N); % constrained estimate
 
 tic
-[ yOut ~] = run_example( Hmat, meas, measPLQ, procPLQ, [], params );
+[ yOut, uOut, ~, ~, infoPLQ] = run_example( Hmat, meas, measPLQ, procPLQ, [], params );
 toc
 
 xOutConRobust = reshape(yOut, n, N);

@@ -333,7 +333,9 @@ while ( ~ converge ) && (itr < max_itr)
     info.muOut = params.mu;
     info.itr = itr;
     info.primal = [info.primal; params.objFun(y)];
-
+    if(params.getCov)
+        info.Omega = params.Omega;
+    end
     
     %% SASHA check
     if(params.constraints)
