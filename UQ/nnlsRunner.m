@@ -9,7 +9,7 @@ clc
 m = 10000;  % num of of rows (obs)
 n = 2;   % num of columns (features)
 
-k = 0; %number of zero entries at the solution
+k = 1; %number of zero entries at the solution
 
 %check condition number
 A = randn(m,n) +  10*binornd(1,0.5,m,n);
@@ -31,6 +31,7 @@ params.C = C;
 params.d = d; 
 params.Ftol = 1e-10;
 params.muTol = 1e-8; 
+params.maxItr = 100;
 
 % Initialize
 xIn = rand(n,1).*ones(n,1); 
