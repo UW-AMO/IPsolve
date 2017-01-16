@@ -105,7 +105,7 @@ end
 
 
 
-solutionps = PseudoSmoother(ginst, [1 0], z', Q{1}, R{1}, 2, 1, N, [0;1]);
+solutionps = PseudoSmoother(ginst, [1 0], z', Q{1}, R{1}, 2, 1, N, [0;1], 'huber');
 stateps = reshape(solutionps, 2, N);
 
 plot(t', Xs(1,:), 'b', t', x_true, 'r', t', stateps(1,:), 'k')
