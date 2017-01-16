@@ -10,7 +10,7 @@ N     = 100;        % number of measurement time points
 dt    = numP*2*pi / N;  % time between measurement points
 sigma =  .1;       % standard deviation of measurement noise
 sigmaMod = 0.1;    % sigma we tell smoot
-outliers = 0;
+outliers = 1;
 
 if(outliers)
     out = N*.05;        % percent of outliers
@@ -43,7 +43,7 @@ R = num2cell(Rvect);
 hvect = kron([1 0], ones(N,1));
 h = num2cell(hvect,2);
 ginst = [1 dt; 0 1];
-mu = [0;0];
+mu = [0;1];
 gain = [.5*dt*dt; dt];
 Po = gain*gain';
 for j=1:N
@@ -104,4 +104,9 @@ for j=1:(n-1)
 end
 
 
-plot(t', Xs(1,:), 'b', t', x_true, 'r')
+
+solutionps = PseudoSmoother(ginst, [1 0], z', Q{1}, R{1}, 2, 1, N, [0;1]);
+stateps = reshape(solutionps, 2, N);
+
+plot(t', Xs(1,:), 'b', t', x_true, 'r', t', stateps(1,:), 'k')
+legend('Gianpi Solution', 'True Solution', 'IPSolve Solution') 
