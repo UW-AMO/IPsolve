@@ -10,7 +10,7 @@ w = [x0; zeros((N-1)*n,1)];
 params.K = sqrt(Qps)*Gmain;
 params.k = sqrt(Qps)*w;
 
-[solution, ~] = run_example(sqrt(Rps)*Hmain, sqrt(Rps)*z, models, models, [], params);
+[solution, ~] = run_example(sqrt(Rps)*Hmain, sqrt(Rps)*z, models, 'l2', [], params);
 
 
 

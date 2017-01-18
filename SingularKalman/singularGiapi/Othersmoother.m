@@ -6,7 +6,7 @@ gamma = 1;
 signalFunc = @(x) sin(x);
 box = [-1,1]; % lower, upper 
 numP = 4;
-N     = 100;        % number of measurement time points
+N     = 20;        % number of measurement time points
 dt    = numP*2*pi / N;  % time between measurement points
 sigma =  .1;       % standard deviation of measurement noise
 sigmaMod = 0.1;    % sigma we tell smoot
@@ -37,6 +37,8 @@ outliers = zeros(1,N);
 inds = randperm(N, out); % indices of outliers
 outliers(inds) = mag*randn(1,out);
 z       = x_true + gaussErrors + outliers;
+
+
 y = num2cell(z);
 Rvect = sigma^2*ones(1,N);
 R = num2cell(Rvect);
@@ -103,10 +105,22 @@ for j=1:(n-1)
     Ps{i}=Pf{i}+A{i}*(Ps{i+1}-Pp{i+1})*A{i}';
 end
 
-
-
-solutionps = PseudoSmoother(ginst, [1 0], z', Q{1}, R{1}, 2, 1, N, [0;1], 'huber');
+solutionps = PseudoSmoother(ginst, [1 0], z', Q{1}, R{1}, 2, 1, N, [0;1], 'l2');
 stateps = reshape(solutionps, 2, N);
+%[M, P] = qr(Q{1});
+M = Q{1};
+Proj = 1/(.25*dt^4+dt^2)*gain*gain';
+for k =1:n-1
+    check(k) = norm((eye(2,2) - Proj)*(Xf(:,k+1) - ginst*Xf(:,k)));
+    checkps(k) = norm((eye(2,2) - Proj)*(stateps(k+1) - ginst*stateps(k)));
+end
+ plot(1:n-1, check, 'r', 1:n-1, checkps, 'k')
+ legend('Giapi projected error', 'Pseudo solver projected error')
 
-plot(t', Xs(1,:), 'b', t', x_true, 'r', t', stateps(1,:), 'k')
-legend('Gianpi Solution', 'True Solution', 'IPSolve Solution') 
+
+
+
+% plot(t', Xs(1,:), 'b', t', x_true, 'r', t', stateps(1,:), 'k', 'Linewidth', 3)
+% legend('Gianpi Solution', 'True Solution', 'IPSolve Solution') 
+% hold on
+% plot(t', outliers)
