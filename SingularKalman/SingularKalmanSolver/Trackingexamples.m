@@ -8,12 +8,12 @@
 %
 
 gamma = 1;
-%signalFunc = @(x) sin(-x);
-signalFunc = @(x) exp(sin(4*x))
+signalFunc = @(x) sin(x);
+%signalFunc = @(x) exp(sin(4*x))
 box = [-1,1]; % lower, upper 
 numP = 4;
-N     = 100;        % number of measurement time points
-dt    = numP*2*pi / (4*N);  % time between measurement points
+N     = 50;        % number of measurement time points
+dt    = numP*2*pi / (N);  % time between measurement points
 sigma =  .1;       % standard deviation of measurement noise
 sigmaMod = 0.1;    % sigma we tell smoot
 outliers = 1;
@@ -47,8 +47,7 @@ z       = x_true + gaussErrors + outliers;
 R = sigma*sigma;
 gain = [.5*dt*dt; dt];
 Q = gain*gain';
-%Q = gamma^2*Q;
-Q = 50^2/12*Q;
+
 
 G = [1 dt; 0 1];
 H = [1 0];
@@ -69,10 +68,16 @@ h_min   = 0;       % minimum horizontal value in plots
 h_max   = dt*N;       % maximum horizontal value in plots
 v_min   = min(x_true)*1.3 -1;    % minimum vertical value in plots
 v_max   = max(x_true)*1.3 +.2;    % maximum vertical value in plots
+Proj = 1/(.25*dt^4+dt^2)*(gain*gain');
+for k =1:N-1
+    ourcheck(k) = norm((eye(2,2) - Proj)*(xsoln(k+1) - G*xsoln(k)));
+end
+plot(1:N-1, ourcheck)
 
-plot(t', x_true, 'k', t', xsoln(1,2:end)', 'r--', t', z, 'ko', 'Linewidth', 2)
-legend('truth', 'singular estimate','observed data');
-axis([h_min, h_max, v_min, v_max]);
+
+% plot(t', x_true, 'k', t', xsoln(1,2:end)', 'r--', t', z, 'ko', 'Linewidth', 2)
+% legend('truth', 'singular estimate','observed data');
+% axis([h_min, h_max, v_min, v_max]);
 
 
 
