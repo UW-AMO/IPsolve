@@ -22,7 +22,7 @@ n = length(x_0);
 m =length(z)/N;
 
 %taking square roots
-multMatSing = sqrt(Q);
+multMatSing = sqrtm(Q);
 Rmat = sqrt(R);
 
 %making matrix A

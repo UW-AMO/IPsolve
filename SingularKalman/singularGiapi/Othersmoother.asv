@@ -132,19 +132,19 @@ M = Q{1};
 
 
 
-[D, A, hatw] = SingularKalmanSetup(ginst, h{1}, Q{1}, R{1}, [0;1], N, z');
+[D, A, hatw] = SingularKalmanSetup(ginst, h{1}, M, R{1}, [0;0], N, z');
 [Dr Dc] = size(D);
 
 params.E = A; 
 params.e = hatw; 
 params.eqFlag =1; % do we need this?
 tic
-[aff_soln] = run_example_affine(D, zeros(Dr,1), 'l2', [], [], params);
+[aff_soln] = run_example_affine(D, zeros(Dr,1), 'huber', [], [], params);
 time = toc;
 
 [xsoln, vsoln, wsoln] = extractor(m, 2, N, aff_soln);
-difference = norm(Xs(:,:) - xsoln(:, 2:end));
-plot(t', Xs(1,:) - xsoln(1, 2:end))
+difference = norm(Xs(:,:) - xsoln(:, 1:end));
+
 % plot(t', Xs(1,:), 'b', t', x_true, 'r', t', stateps(1,:), 'k', 'Linewidth', 3)
 % legend('Gianpi Solution', 'True Solution', 'IPSolve Solution') 
 % hold on

@@ -63,7 +63,7 @@ v_min   = min(x_true)*1.3 -1;    % minimum vertical value in plots
 v_max   = max(x_true)*1.3 +.2;    % maximum vertical value in plots
 Proj = 1/(.25*dt^4+dt^2)*(gain*gain');
 for k =1:N-1
-    ourcheck(k) = norm((eye(2,2) - Proj)*(xsoln(k+1) - G*xsoln(k)));
+    ourcheck(k) = norm((eye(2,2) - Proj)*(xsoln(:,k+1) - G*xsoln(:,k)));
 end
 plot(1:N-1, ourcheck)
 
