@@ -9,7 +9,7 @@ N     = 50;        % number of measurement time points
 dt    = numP*2*pi / (N);  % time between measurement points
 sigma =  .1;       % standard deviation of measurement noise
 sigmaMod = 0.1;    % sigma we tell smoot
-outliers = 1;
+outliers = 0;
 
 if(outliers)
     out = N*.1;        % percent of outliers
@@ -52,7 +52,7 @@ params.E = A;
 params.e = hatw; 
 params.eqFlag =1; % do we need this?
 tic
-[aff_soln] = run_example_affine(D, zeros(Dr,1), 'huber', [], [], params);
+[aff_soln] = run_example_affine(D, zeros(Dr,1), 'l2', [], [], params);
 time = toc;
 
 [xsoln, vsoln, wsoln] = extractor(m, n, N, aff_soln);
@@ -65,8 +65,19 @@ Proj = 1/(.25*dt^4+dt^2)*(gain*gain');
 for k =1:N-1
     ourcheck(k) = norm((eye(2,2) - Proj)*(xsoln(:,k+1) - G*xsoln(:,k)));
 end
-plot(1:N-1, ourcheck)
+%plot(1:N-1, ourcheck)
+Afull = full(A);
 
+cvx_begin
+    variable x(252);
+    minimize( norm(D*x));
+    subject to
+        Afull*x == hatw;
+cvx_end
+
+[cvxsoln, cvxvsoln, cvxwsoln] = extractor(m,n, N, x);
+difference = xsoln - cvxsoln;
+plot(t', difference(1,2:end))
 
 % plot(t', x_true, 'k', t', xsoln(1,2:end)', 'r--', t', z, 'ko', 'Linewidth', 2)
 % legend('truth', 'singular estimate','observed data');

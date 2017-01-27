@@ -10,7 +10,7 @@ numP = 4;
 % %<<<<<<< HEAD
 % N     = 40;        % number of measurement time points
 % =======
-N     = 50;        % number of measurement time points
+N     = 10;        % number of measurement time points
 %>>>>>>> 1c9597f2799ed4051332a8343024a47a55da6987
 dt    = numP*2*pi / N;  % time between measurement points
 sigma =  .1;       % standard deviation of measurement noise
