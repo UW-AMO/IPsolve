@@ -10,7 +10,7 @@ numP = 4;
 % %<<<<<<< HEAD
 % N     = 40;        % number of measurement time points
 % =======
-N     = 10;        % number of measurement time points
+N     = 100;        % number of measurement time points
 %>>>>>>> 1c9597f2799ed4051332a8343024a47a55da6987
 dt    = numP*2*pi / N;  % time between measurement points
 sigma =  .1;       % standard deviation of measurement noise
@@ -50,12 +50,12 @@ R = num2cell(Rvect);
 hvect = kron([1 0], ones(N,1));
 h = num2cell(hvect,2);
 ginst = [1 dt; 0 1];
-mu = [0;1];
+mu = ginst*[0;1];
 gain = [.5*dt*dt; dt];
 Po = gain*gain';
 for j=1:N
     g{j} = ginst;
-    Q{j} = Po;
+    Q{j} = gain*gain';
 end
 
 
