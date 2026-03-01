@@ -13,7 +13,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from ipsolve import solve
+from ipsolve import solve, huber
 
 
 def main():
@@ -33,7 +33,7 @@ def main():
     x_ls = solve(H, z, meas="l2", silent=True)
 
     # Huber solve
-    x_huber = solve(H, z, meas="huber", meas_kappa=1.0, silent=True)
+    x_huber = solve(H, z, meas=huber(kappa=1.0), silent=True)
 
     # Compare
     err_ls = np.linalg.norm(x_ls - x_true)

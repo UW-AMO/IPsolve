@@ -13,7 +13,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from ipsolve import solve
+from ipsolve import solve, hinge
 
 try:
     import cvxpy
@@ -56,10 +56,9 @@ def main():
     # Solve
     x_ip = solve(
         Y_aug, z,
-        meas="hinge", meas_lambda=lam,
+        meas=hinge(lam=lam),
         lin_term=lin_term,
         A_ineq=A_ineq, a_ineq=a_ineq,
-        silent=False,
         opt_tol=1e-7,
     )
 

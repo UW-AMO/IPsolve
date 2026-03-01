@@ -17,7 +17,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from ipsolve import solve
+from ipsolve import solve, infnorm
 
 
 def main():
@@ -47,7 +47,7 @@ def main():
     print("=" * 60)
     print(f"Inf-norm regularisation:  m={m}, n={n}, k={k}, λ={lam:.4f}")
     print("=" * 60)
-    x_ip = solve(A, b, meas="l2", proc="infnorm", proc_lambda=lam, opt_tol=1e-7)
+    x_ip = solve(A, b, proc=infnorm(lam=lam), opt_tol=1e-7)
 
     # Report
     print(f"\n‖x_true‖∞  = {np.max(np.abs(x0)):.4f}")

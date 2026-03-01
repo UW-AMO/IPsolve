@@ -13,7 +13,7 @@ structure, handled through the ``K_proc`` / ``k_proc`` interface.
 
 import numpy as np
 import scipy.sparse as sp
-from ipsolve import solve
+from ipsolve import solve, huber, l2
 
 
 def blktridiag(Amd, Asub, Asup, N):
@@ -111,7 +111,7 @@ def main():
     print("=" * 70)
     print("1. Standard Kalman smoother  (ℓ₂ / ℓ₂)")
     print("=" * 70)
-    y_ls = solve(H_mat, meas, meas="l2", proc="l2",
+    y_ls = solve(H_mat, meas, proc=l2(),
                  K_proc=G_mat, k_proc=w, silent=False)
     x_ls = y_ls.reshape(N, n)
 
@@ -119,7 +119,7 @@ def main():
     print("\n" + "=" * 70)
     print("2. Robust Kalman smoother  (Huber / Huber)")
     print("=" * 70)
-    y_rob = solve(H_mat, meas, meas="huber", proc="huber",
+    y_rob = solve(H_mat, meas, meas=huber(), proc=huber(),
                   K_proc=G_mat, k_proc=w, silent=False)
     x_rob = y_rob.reshape(N, n)
 
@@ -127,7 +127,7 @@ def main():
     print("\n" + "=" * 70)
     print("3. Constrained Kalman smoother  (ℓ₂ / ℓ₂ + box)")
     print("=" * 70)
-    y_con = solve(H_mat, meas, meas="l2", proc="l2",
+    y_con = solve(H_mat, meas, proc=l2(),
                   K_proc=G_mat, k_proc=w,
                   A_ineq=A_con, a_ineq=a_con, silent=False)
     x_con = y_con.reshape(N, n)
@@ -136,7 +136,7 @@ def main():
     print("\n" + "=" * 70)
     print("4. Constrained Robust Kalman  (Huber / Huber + box)")
     print("=" * 70)
-    y_con_rob = solve(H_mat, meas, meas="huber", proc="huber",
+    y_con_rob = solve(H_mat, meas, meas=huber(), proc=huber(),
                       K_proc=G_mat, k_proc=w,
                       A_ineq=A_con, a_ineq=a_con, silent=False)
     x_con_rob = y_con_rob.reshape(N, n)

@@ -25,7 +25,7 @@ import matplotlib.pyplot as plt
 # Ensure the package is importable
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from ipsolve import solve
+from ipsolve import solve, l1, huber
 
 
 def _make_lasso(m, n, k=None, noise=0.05, seed=42):
@@ -63,7 +63,7 @@ def benchmark_lasso():
 
         # Direct solve
         t0 = time.perf_counter()
-        x_d = solve(H, z, meas="l2", proc="l1", proc_lambda=lam,
+        x_d = solve(H, z, proc=l1(lam=lam),
                     silent=True, delta=1e-8)
         t_direct = time.perf_counter() - t0
 
@@ -71,7 +71,7 @@ def benchmark_lasso():
 
         # CG (inexact) solve
         t0 = time.perf_counter()
-        x_cg = solve(H, z, meas="l2", proc="l1", proc_lambda=lam,
+        x_cg = solve(H, z, proc=l1(lam=lam),
                      silent=True, delta=1e-8, inexact=True)
         t_cg = time.perf_counter() - t0
 
@@ -114,12 +114,12 @@ def benchmark_huber():
         z[outliers] += 10 * rng.standard_normal(len(outliers))
 
         t0 = time.perf_counter()
-        x_d = solve(H, z, meas="huber", meas_kappa=1.0,
+        x_d = solve(H, z, meas=huber(kappa=1.0),
                     silent=True, delta=1e-8)
         t_direct = time.perf_counter() - t0
 
         t0 = time.perf_counter()
-        x_cg = solve(H, z, meas="huber", meas_kappa=1.0,
+        x_cg = solve(H, z, meas=huber(kappa=1.0),
                      silent=True, delta=1e-8, inexact=True)
         t_cg = time.perf_counter() - t0
 

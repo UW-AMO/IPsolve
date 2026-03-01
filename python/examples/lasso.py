@@ -12,7 +12,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from ipsolve import solve
+from ipsolve import solve, l1
 
 
 def main():
@@ -38,7 +38,7 @@ def main():
     lam = np.max(np.abs(A.T @ z)) / 10
 
     # Solve with IPsolve
-    x_lasso = solve(A, z, meas="l2", proc="l1", proc_lambda=lam, silent=False)
+    x_lasso = solve(A, z, proc=l1(lam=lam))
 
     # Report
     nnz_true = np.sum(np.abs(x0) > 1e-8)

@@ -16,6 +16,31 @@ pip install -e ".[test]"           # editable install with test deps
 pytest                             # run 12 tests (verified vs CVXPY)
 ```
 
+```python
+from ipsolve import solve, huber, l1, l2, hinge, qreg
+
+# Least squares
+x = solve(H, z)
+
+# Robust regression
+x = solve(H, z, meas=huber(kappa=1.0))
+
+# Lasso
+x = solve(H, z, proc=l1(lam=0.5))
+
+# Huber + L1 (robust sparse)
+x = solve(H, z, meas=huber(kappa=1.0), proc=l1(lam=0.5))
+
+# SVM  (was: proc_mMult=1.0/lam ... now just proc=l2(lam=lam))
+w = solve(yX, np.ones(m), meas=hinge(), proc=l2(lam=0.01))
+
+# Quantile regression
+x = solve(H, z, meas=qreg(tau=0.25))
+
+# Box constraints
+x = solve(H, z, bounds=(-1, 1))
+```
+
 ## What it solves
 
 $$
@@ -43,18 +68,31 @@ elimination and optional Mehrotra predictor-corrector.
 
 ## Penalties
 
+Each penalty is a factory function.  Call without a dimension for `solve()`:
+
+```python
+meas=huber(kappa=1.0)   # lazy spec -- dimension filled in by solve()
+proc=l1(lam=0.5)
+```
+
+Call with a dimension to get the raw PLQ object:
+
+```python
+plq = huber(100, kappa=1.0)   # returns PLQ directly
+```
+
 | Name | Formula | Key parameter |
 |------|---------|---------------|
-| `l2` | $\frac{1}{2\sigma}\|v\|^2$ | `mMult` (= $\sigma$) |
-| `l1` | $\lambda\|v\|_1$ | `lam` |
-| `huber` | $\sum H_\kappa(v_i)$ | `kappa` |
-| `hinge` | $\lambda\sum\max(-v_i,0)$ | `lam` |
-| `vapnik` | $\lambda\sum\max(\|v_i\|-\varepsilon,0)$ | `lam`, `eps` |
-| `qreg` | $\sum[\tau\cdot\max(v_i,0)+(1{-}\tau)\max(-v_i,0)]$ | `tau`, `lam` |
+| `l2` | (lam/2) \\|v\\|^2 | `lam` (or `mMult`) |
+| `l1` | lam * \\|v\\|_1 | `lam` |
+| `huber` | Huber loss | `kappa` |
+| `hinge` | lam * sum pos(v) | `lam` |
+| `vapnik` | lam * sum max(\\|v\\| - eps, 0) | `lam`, `eps` |
+| `qreg` | check / pinball loss | `tau`, `lam` |
 | `qhuber` | quantile Huber (smooth quantile) | `tau`, `kappa` |
-| `infnorm` | $\lambda\|v\|_\infty$ | `lam` |
-| `logreg` | $\sum\log(1+e^{v_i})$ (callable M) | `alpha` |
-| `hybrid` | $\sum[\sqrt{1+v_i^2/s}-1]$ (callable M) | `scale` |
+| `infnorm` | lam * \\|v\\|_inf | `lam` |
+| `logreg` | sum log(1 + exp(v)) | `alpha` |
+| `hybrid` | sum(sqrt(1 + v^2/s) - 1) | `scale` |
 
 ## Examples
 

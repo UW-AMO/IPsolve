@@ -12,7 +12,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from ipsolve import solve
+from ipsolve import solve, qreg
 
 
 def main():
@@ -38,7 +38,7 @@ def main():
     ax.scatter(x_data, z, s=6, alpha=0.3, c="grey", label="data")
 
     for tau in taus:
-        w = solve(H, z, meas="qreg", meas_tau=tau, meas_lambda=1.0, silent=True)
+        w = solve(H, z, meas=qreg(tau=tau), silent=True)
         y_pred = H_plot @ w
         ax.plot(x_plot, y_pred, label=f"τ = {tau}")
 
