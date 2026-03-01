@@ -11,7 +11,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from ipsolve import solve
+from ipsolve import solve, huber, l1
 
 try:
     import cvxpy
@@ -40,8 +40,7 @@ def main():
     lam = 0.5
 
     # IPsolve
-    x_ip = solve(H, z, meas="huber", proc="l1",
-                  meas_kappa=kappa, proc_lambda=lam, silent=False)
+    x_ip = solve(H, z, meas=huber(kappa=kappa), proc=l1(lam=lam))
 
     def huber_val(v, k):
         return np.sum(np.where(np.abs(v) > k, np.abs(v) - 0.5 * k, 0.5 * v ** 2 / k))

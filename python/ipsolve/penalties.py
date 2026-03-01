@@ -1,31 +1,40 @@
 """
-Penalty library – build PLQ objects for common penalties.
+Penalty library -- PLQ objects for common penalties.
 
-Each factory function returns a :class:`PLQ` object *before* composition
-with a linear model.  The caller (typically :func:`ipsolve.api.solve`)
-handles the composition  ``b ← −b − B·z;  B ← B·H``.
+Basic usage::
+
+    from ipsolve import solve, huber, l1, l2
+
+    x = solve(H, z, meas=huber(kappa=1.0), proc=l1(lam=0.5))
+
+Each factory can be called two ways:
+
+- **Without dimension** (for use with ``solve()``): returns a :class:`Penalty`
+  spec that gets materialized when the dimension is known.
+- **With dimension** (advanced): returns a built :class:`PLQ` object directly.
 
 Supported penalties
 -------------------
-===========  =============================================================
-Name         Description
-===========  =============================================================
-``l1``       ℓ₁ norm, λ‖v‖₁
-``l2``       Squared ℓ₂, (2σ)⁻¹‖v‖²
-``huber``    Huber loss with threshold κ
-``hinge``    Hinge loss λ·pos(−v)  (SVM)
-``vapnik``   Vapnik ε-insensitive loss
-``qreg``     Quantile (check / pinball) loss
+===========  ============================================================
+Name         Formula
+===========  ============================================================
+``l1``       lam * ||v||_1
+``l2``       (lam/2) ||v||^2
+``huber``    Huber loss with threshold kappa
+``hinge``    lam * sum pos(v)
+``vapnik``   lam * sum max(|v| - eps, 0)
+``qreg``     Quantile / pinball loss
 ``qhuber``   Quantile Huber (smooth quantile)
-``infnorm``  ℓ∞ norm (via simplex constraint on dual)
-``logreg``   Logistic regression (smooth conjugate via function handle)
-``hybrid``   Hybrid / robust loss √(1 + v²/s) − 1
-===========  =============================================================
+``infnorm``  lam * ||v||_inf
+``logreg``   sum log(1 + exp(v))
+``hybrid``   sum(sqrt(1 + v^2/s) - 1)
+===========  ============================================================
 """
 
 from __future__ import annotations
 
-from typing import Optional
+import inspect
+from dataclasses import dataclass, field
 
 import numpy as np
 import scipy.sparse as sp
@@ -34,8 +43,37 @@ from ipsolve.plq import PLQ
 
 
 # ---------------------------------------------------------------------------
+# Penalty specification (lazy -- materialized by solve())
+# ---------------------------------------------------------------------------
+
+@dataclass
+class Penalty:
+    """Lazy penalty spec -- materialized into a PLQ when the dimension is known.
+
+    Created by calling a penalty factory without a dimension::
+
+        >>> huber(kappa=1.0)
+        huber(kappa=1.0)
+        >>> l1()
+        l1()
+    """
+
+    name: str
+    kwargs: dict = field(default_factory=dict)
+
+    def build(self, m: int) -> PLQ:
+        """Build the PLQ object for dimension *m*."""
+        return load_penalty(self.name, m, **self.kwargs)
+
+    def __repr__(self):
+        parts = ["{0}={1!r}".format(k, v) for k, v in self.kwargs.items()]
+        return "{0}({1})".format(self.name, ", ".join(parts))
+
+
+# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 def _eye(m):
     return sp.eye(m, format="csc")
 
@@ -53,146 +91,236 @@ def pos(x):
 # Penalty factories
 # ---------------------------------------------------------------------------
 
-def l1(m: int, lam: float = 1.0) -> PLQ:
-    r"""ℓ₁ penalty:  ρ(v) = λ ‖v‖₁.
+def l1(m=None, *, lam=1.0):
+    """l1 norm:  rho(v) = lam * ||v||_1.
 
-    Conjugate domain: u ∈ [−λ, λ]ᵐ, so C = [I; −I], c = λ·1.
+    Parameters
+    ----------
+    m : int or None
+        Dimension.  Omit to get a :class:`Penalty` spec for ``solve()``.
+    lam : float
+        Regularization weight (default 1).
     """
-    M = _zeros(m)
-    C = sp.vstack([_eye(m), -_eye(m)], format="csc")
-    c = lam * np.ones(2 * m)
-    B = _eye(m)
-    b = np.zeros(m)
-    obj = lambda v: lam * np.sum(np.abs(v))  # noqa: E731
-    return PLQ(M=M, B=B, C=C, c=c, b=b, obj=obj)
+    if m is None:
+        kw = {} if lam == 1.0 else {"lam": lam}
+        return Penalty("l1", kw)
+    return PLQ(
+        M=_zeros(m), B=_eye(m),
+        C=sp.vstack([_eye(m), -_eye(m)], format="csc"),
+        c=lam * np.ones(2 * m), b=np.zeros(m),
+        obj=lambda v, _l=lam: _l * np.sum(np.abs(v)),
+    )
 
 
-def l2(m: int, mMult: float = 1.0) -> PLQ:
-    r"""Squared ℓ₂ penalty:  ρ(v) = ‖v‖² / (2·mMult).
+def l2(m=None, *, lam=None, mMult=1.0):
+    """Squared l2:  rho(v) = (lam/2) ||v||^2.
 
-    Conjugate: ½ uᵀ(mMult·I)u,  unconstrained ⇒ trivial constraint C=0, c=1.
+    Parameters
+    ----------
+    m : int or None
+        Dimension.  Omit to get a :class:`Penalty` spec for ``solve()``.
+    lam : float or None
+        Regularization weight.  Internally sets ``mMult = 1/lam``.
+    mMult : float
+        Direct scaling: ``rho(v) = ||v||^2 / (2 * mMult)``.
+        Ignored when *lam* is given.
+
+    Examples
+    --------
+    >>> l2(lam=0.01)          # (0.01/2)||v||^2
+    l2(lam=0.01)
+    >>> l2()                  # default: 0.5||v||^2
+    l2()
     """
-    M = mMult * _eye(m)
-    # Trivial constraint: 0ᵀu ≤ 1  (always satisfied)
-    C = sp.csc_matrix((1, m))  # (L=1, K=m) – one row of zeros
-    c = np.array([1.0])
-    B = _eye(m)
-    b = np.zeros(m)
-    obj = lambda v: 0.5 * np.dot(v, v) / mMult  # noqa: E731
-    return PLQ(M=M, B=B, C=C, c=c, b=b, obj=obj)
+    if lam is not None:
+        mMult = 1.0 / lam
+    if m is None:
+        kw = {}
+        if lam is not None:
+            kw["lam"] = lam
+        elif mMult != 1.0:
+            kw["mMult"] = mMult
+        return Penalty("l2", kw)
+    return PLQ(
+        M=mMult * _eye(m), B=_eye(m),
+        C=sp.csc_matrix((1, m)), c=np.array([1.0]), b=np.zeros(m),
+        obj=lambda v, _mm=mMult: 0.5 * np.dot(v, v) / _mm,
+    )
 
 
-def huber(m: int, kappa: float = 1.0, mMult: float = 1.0) -> PLQ:
-    r"""Huber loss with threshold κ·mMult.
+def huber(m=None, *, kappa=1.0, mMult=1.0):
+    """Huber loss with threshold *kappa*.
 
-    Conjugate: M = κ·mMult·I, C = [I; −I], c = 1.
+    ::
+
+        rho(v) = |v| - kappa/2      if |v| > kappa
+               = v^2 / (2*kappa)    if |v| <= kappa
+
+    Parameters
+    ----------
+    m : int or None
+    kappa : float
+        Huber threshold.
     """
-    M = mMult * kappa * _eye(m)
-    C = sp.vstack([_eye(m), -_eye(m)], format="csc")
-    c = np.ones(2 * m)
-    B = _eye(m)
-    b = np.zeros(m)
+    if m is None:
+        kw = {}
+        if kappa != 1.0:
+            kw["kappa"] = kappa
+        if mMult != 1.0:
+            kw["mMult"] = mMult
+        return Penalty("huber", kw)
+
     threshold = mMult * kappa
 
-    def obj(v):
-        return np.sum(
-            np.where(
-                np.abs(v) > threshold,
-                np.abs(v) - 0.5 * threshold,
-                0.5 * v ** 2 / threshold,
-            )
-        )
+    def obj(v, _t=threshold):
+        return np.sum(np.where(
+            np.abs(v) > _t, np.abs(v) - 0.5 * _t, 0.5 * v ** 2 / _t,
+        ))
 
-    return PLQ(M=M, B=B, C=C, c=c, b=b, obj=obj)
+    return PLQ(
+        M=mMult * kappa * _eye(m), B=_eye(m),
+        C=sp.vstack([_eye(m), -_eye(m)], format="csc"),
+        c=np.ones(2 * m), b=np.zeros(m), obj=obj,
+    )
 
 
-def hinge(m: int, lam: float = 1.0) -> PLQ:
-    r"""Hinge loss:  ρ(v) = λ · Σ pos(vᵢ).
+def hinge(m=None, *, lam=1.0):
+    """Hinge loss:  rho(v) = lam * sum pos(v).
 
-    Used for SVM:  ρ(1 − yAx) = λ·Σ pos(1 − yAx).
-    B = −I so that after composition the solver evaluates at z − Hx.
-    Conjugate domain: u ∈ [0, λ]ᵐ, so C = [I; −I], c = [λ; 0].
+    Used for SVM classification.
+
+    Parameters
+    ----------
+    m : int or None
+    lam : float
+        Weight (default 1).
     """
-    M = _zeros(m)
-    C = sp.vstack([_eye(m), -_eye(m)], format="csc")
-    c = np.concatenate([lam * np.ones(m), np.zeros(m)])
-    B = -_eye(m)  # negative so penalty evaluates at z − Hx
-    b = np.zeros(m)
-    obj = lambda v: lam * np.sum(pos(v))  # noqa: E731
-    return PLQ(M=M, B=B, C=C, c=c, b=b, obj=obj)
+    if m is None:
+        kw = {} if lam == 1.0 else {"lam": lam}
+        return Penalty("hinge", kw)
+    return PLQ(
+        M=_zeros(m), B=-_eye(m),
+        C=sp.vstack([_eye(m), -_eye(m)], format="csc"),
+        c=np.concatenate([lam * np.ones(m), np.zeros(m)]),
+        b=np.zeros(m),
+        obj=lambda v, _l=lam: _l * np.sum(pos(v)),
+    )
 
 
-def vapnik(m: int, lam: float = 1.0, eps: float = 0.2) -> PLQ:
-    r"""Vapnik ε-insensitive loss: λ·max(|v| − ε, 0).
+def vapnik(m=None, *, lam=1.0, eps=0.2):
+    """Vapnik epsilon-insensitive loss:  lam * sum max(|v| - eps, 0).
 
-    Conjugate: M=0, C=[I;−I], c=[λ;0]  (same as hinge on [v;−v]),
-    with offset b = ε·1.
+    Parameters
+    ----------
+    m : int or None
+    lam : float
+    eps : float
+        Insensitivity zone width.
     """
-    M = _zeros(2 * m)
-    C = sp.vstack([sp.eye(2 * m), -sp.eye(2 * m)], format="csc")
-    c = np.concatenate([lam * np.ones(2 * m), np.zeros(2 * m)])
-    B = sp.vstack([_eye(m), -_eye(m)], format="csc")
-    b = -eps * np.ones(2 * m)
-    obj = lambda v: lam * np.sum(pos(np.abs(v) - eps))  # noqa: E731
-    return PLQ(M=M, B=B, C=C, c=c, b=b, obj=obj)
+    if m is None:
+        kw = {}
+        if lam != 1.0:
+            kw["lam"] = lam
+        if eps != 0.2:
+            kw["eps"] = eps
+        return Penalty("vapnik", kw)
+    K = 2 * m
+    return PLQ(
+        M=_zeros(K),
+        B=sp.vstack([_eye(m), -_eye(m)], format="csc"),
+        C=sp.vstack([sp.eye(K), -sp.eye(K)], format="csc"),
+        c=np.concatenate([lam * np.ones(K), np.zeros(K)]),
+        b=-eps * np.ones(K),
+        obj=lambda v, _l=lam, _e=eps: _l * np.sum(pos(np.abs(v) - _e)),
+    )
 
 
-def qreg(m: int, lam: float = 1.0, tau: float = 0.5) -> PLQ:
-    r"""Quantile (check / pinball) loss:  λ·[τ·pos(−v) + (1−τ)·pos(v)].
+def qreg(m=None, *, lam=1.0, tau=0.5):
+    """Quantile (check / pinball) loss.
 
-    Conjugate domain: u ∈ [−λτ, λ(1−τ)]ᵐ.
+    Parameters
+    ----------
+    m : int or None
+    lam : float
+    tau : float
+        Quantile level in (0, 1).
     """
-    M = _zeros(m)
-    C = sp.vstack([_eye(m), -_eye(m)], format="csc")
-    c = lam * np.concatenate([(1 - tau) * np.ones(m), tau * np.ones(m)])
-    B = _eye(m)
-    b = np.zeros(m)
-    obj = lambda v: lam * (tau * np.sum(pos(v)) + (1 - tau) * np.sum(pos(-v)))  # noqa: E731
-    return PLQ(M=M, B=B, C=C, c=c, b=b, obj=obj)
+    if m is None:
+        kw = {}
+        if lam != 1.0:
+            kw["lam"] = lam
+        if tau != 0.5:
+            kw["tau"] = tau
+        return Penalty("qreg", kw)
+    return PLQ(
+        M=_zeros(m), B=_eye(m),
+        C=sp.vstack([_eye(m), -_eye(m)], format="csc"),
+        c=lam * np.concatenate([(1 - tau) * np.ones(m), tau * np.ones(m)]),
+        b=np.zeros(m),
+        obj=lambda v, _l=lam, _t=tau: _l * (
+            _t * np.sum(pos(v)) + (1 - _t) * np.sum(pos(-v))
+        ),
+    )
 
 
-def qhuber(m: int, kappa: float = 1.0, tau: float = 0.5) -> PLQ:
-    r"""Quantile Huber (smoothed quantile regression).
+def qhuber(m=None, *, kappa=1.0, tau=0.5):
+    """Quantile Huber (smoothed quantile regression).
 
-    Conjugate: M = κI, C = ½[I; −I], c = [(1−τ); τ].
+    Parameters
+    ----------
+    m : int or None
+    kappa : float
+    tau : float
+        Quantile level in (0, 1).
     """
-    M = kappa * _eye(m)
-    C = 0.5 * sp.vstack([_eye(m), -_eye(m)], format="csc")
-    c = np.concatenate([(1 - tau) * np.ones(m), tau * np.ones(m)])
-    B = _eye(m)
-    b = np.zeros(m)
+    if m is None:
+        kw = {}
+        if kappa != 1.0:
+            kw["kappa"] = kappa
+        if tau != 0.5:
+            kw["tau"] = tau
+        return Penalty("qhuber", kw)
 
-    def obj(v):
-        # Quantile Huber evaluation
-        left = v <= -2 * tau * kappa
-        right = v >= 2 * (1 - tau) * kappa
+    def obj(v, _k=kappa, _t=tau):
+        left = v <= -2 * _t * _k
+        right = v >= 2 * (1 - _t) * _k
         mid = ~left & ~right
         return np.sum(
-            left * (-2 * tau * v - kappa * tau ** 2)
-            + mid * (v ** 2 / (2 * kappa))  # should actually be v**2 / kappa with the 0.5 factor
-            + right * (2 * (1 - tau) * v - kappa * (1 - tau) ** 2)
+            left * (-2 * _t * v - _k * _t ** 2)
+            + mid * (v ** 2 / (2 * _k))
+            + right * (2 * (1 - _t) * v - _k * (1 - _t) ** 2)
         )
 
-    return PLQ(M=M, B=B, C=C, c=c, b=b, obj=obj)
+    return PLQ(
+        M=kappa * _eye(m), B=_eye(m),
+        C=0.5 * sp.vstack([_eye(m), -_eye(m)], format="csc"),
+        c=np.concatenate([(1 - tau) * np.ones(m), tau * np.ones(m)]),
+        b=np.zeros(m), obj=obj,
+    )
 
 
-def infnorm(m: int, lam: float = 1.0) -> PLQ:
-    r"""ℓ∞ norm:  ρ(v) = λ ‖v‖∞.
+def infnorm(m=None, *, lam=1.0):
+    """l_inf norm:  rho(v) = lam * ||v||_inf.
 
-    Dual: max uᵀv s.t. ‖u‖₁ ≤ λ, i.e. u split as (u⁺, u⁻) with sum ≤ λ.
-    C has a simplex row [1ᵀ] on top.
+    Parameters
+    ----------
+    m : int or None
+    lam : float
     """
+    if m is None:
+        kw = {} if lam == 1.0 else {"lam": lam}
+        return Penalty("infnorm", kw)
     K = 2 * m
-    M = _zeros(K)
-    # Row 0: simplex constraint sum(u) ≤ lam,  rows 1..2m: -u_i ≤ 0
-    top_row = sp.csc_matrix(np.ones((1, K)))   # (1, 2m)
-    neg_eye = -sp.eye(K, format="csc")          # (2m, 2m)
-    C = sp.vstack([top_row, neg_eye], format="csc")  # (1+2m, K)
-    c = np.concatenate([[lam], np.zeros(K)])
-    B = sp.vstack([_eye(m), -_eye(m)], format="csc")
-    b = np.zeros(K)
-    obj = lambda v: lam * np.max(np.abs(v))  # noqa: E731
-    return PLQ(M=M, B=B, C=C, c=c, b=b, obj=obj)
+    top_row = sp.csc_matrix(np.ones((1, K)))
+    neg_eye = -sp.eye(K, format="csc")
+    return PLQ(
+        M=_zeros(K),
+        B=sp.vstack([_eye(m), -_eye(m)], format="csc"),
+        C=sp.vstack([top_row, neg_eye], format="csc"),
+        c=np.concatenate([[lam], np.zeros(K)]),
+        b=np.zeros(K),
+        obj=lambda v, _l=lam: _l * np.max(np.abs(v)),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -200,60 +328,66 @@ def infnorm(m: int, lam: float = 1.0) -> PLQ:
 # ---------------------------------------------------------------------------
 
 def _logreg_conjugate(u, alpha=0.5):
-    """Logistic regression conjugate: gradient and Hessian.
-
-    Domain: u ∈ (alpha, 1−alpha).
-    f*(u) = u·log(u) + (1−u)·log(1−u)   (negative entropy).
-    """
+    """Logistic regression conjugate (negative entropy)."""
     u = np.clip(u, alpha + 1e-12, 1.0 - alpha - 1e-12)
     grad = np.log(u) - np.log(1.0 - u)
     hess = sp.diags(1.0 / (u * (1.0 - u)), format="csc")
     return grad, hess
 
 
-def logreg(m: int, alpha: float = 0.5) -> PLQ:
-    r"""Logistic regression loss: ρ(v) = Σ log(1 + exp(vᵢ)).
+def logreg(m=None, *, alpha=0.5):
+    """Logistic regression loss:  rho(v) = sum log(1 + exp(v)).
 
-    Uses a callable M for the smooth conjugate.
+    Parameters
+    ----------
+    m : int or None
+    alpha : float
+        Constraint margin.
     """
-    M_func = lambda u: _logreg_conjugate(u, alpha)  # noqa: E731
-    C = sp.vstack([_eye(m), -_eye(m)], format="csc")
-    c = np.concatenate([np.ones(m), alpha * np.ones(m)])
-    B = -_eye(m)  # Note: negative sign matches MATLAB convention
-    b = np.zeros(m)
-    obj = lambda v: np.sum(np.log(1.0 + np.exp(v)))  # noqa: E731
-    return PLQ(M=M_func, B=B, C=C, c=c, b=b, obj=obj)
+    if m is None:
+        kw = {} if alpha == 0.5 else {"alpha": alpha}
+        return Penalty("logreg", kw)
+    return PLQ(
+        M=lambda u: _logreg_conjugate(u, alpha),
+        B=-_eye(m),
+        C=sp.vstack([_eye(m), -_eye(m)], format="csc"),
+        c=np.concatenate([np.ones(m), alpha * np.ones(m)]),
+        b=np.zeros(m),
+        obj=lambda v: np.sum(np.log(1.0 + np.exp(v))),
+    )
 
 
 def _hybrid_conjugate(u, scale=1.0):
-    """Hybrid penalty conjugate: f*(u) = 1 − √(1 − (u/s²)²).
-
-    Gradient: g_i = (u_i / s⁴) / √(1 − (u_i/s²)²)
-    Hessian (diagonal): h_i = 1/(s⁴ · (1 − (u_i/s²)²)^{3/2})
-    """
+    """Hybrid penalty conjugate."""
     m = scale ** 2
     t = (u / m) ** 2
     t = np.clip(t, 0, 1.0 - 1e-12)
     sq = np.sqrt(1.0 - t)
     grad = (u / m) / (m * sq)
-    hess_diag = 1.0 / (m ** 2 * (1.0 - t) ** 1.5)
-    hess = sp.diags(hess_diag, format="csc")
+    hess = sp.diags(1.0 / (m ** 2 * (1.0 - t) ** 1.5), format="csc")
     return grad, hess
 
 
-def hybrid(m: int, scale: float = 1.0) -> PLQ:
-    r"""Hybrid penalty: ρ(v) = Σ (√(1 + vᵢ²/s) − 1).
+def hybrid(m=None, *, scale=1.0):
+    """Hybrid penalty:  rho(v) = sum(sqrt(1 + v^2/s) - 1).
 
-    Uses a callable M for the smooth conjugate.
+    Parameters
+    ----------
+    m : int or None
+    scale : float
     """
+    if m is None:
+        kw = {} if scale == 1.0 else {"scale": scale}
+        return Penalty("hybrid", kw)
     s2 = scale ** 2
-    M_func = lambda u: _hybrid_conjugate(u, scale)  # noqa: E731
-    C = sp.vstack([_eye(m), -_eye(m)], format="csc")
-    c = s2 * np.ones(2 * m)
-    B = _eye(m)
-    b = np.zeros(m)
-    obj = lambda v: np.sum(np.sqrt(1.0 + v ** 2 / scale) - 1.0)  # noqa: E731
-    return PLQ(M=M_func, B=B, C=C, c=c, b=b, obj=obj)
+    return PLQ(
+        M=lambda u: _hybrid_conjugate(u, scale),
+        B=_eye(m),
+        C=sp.vstack([_eye(m), -_eye(m)], format="csc"),
+        c=s2 * np.ones(2 * m),
+        b=np.zeros(m),
+        obj=lambda v: np.sum(np.sqrt(1.0 + v ** 2 / scale) - 1.0),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -261,43 +395,28 @@ def hybrid(m: int, scale: float = 1.0) -> PLQ:
 # ---------------------------------------------------------------------------
 
 PENALTY_REGISTRY = {
-    "l1": l1,
-    "l2": l2,
-    "huber": huber,
-    "hinge": hinge,
-    "vapnik": vapnik,
-    "qreg": qreg,
-    "qhuber": qhuber,
-    "infnorm": infnorm,
-    "logreg": logreg,
-    "hybrid": hybrid,
+    "l1": l1, "l2": l2, "huber": huber, "hinge": hinge,
+    "vapnik": vapnik, "qreg": qreg, "qhuber": qhuber,
+    "infnorm": infnorm, "logreg": logreg, "hybrid": hybrid,
 }
 
 
 def load_penalty(name: str, m: int, **kwargs) -> PLQ:
-    """Load a named PLQ penalty.
+    """Load a named PLQ penalty of dimension *m*.
 
     Parameters
     ----------
-    name : str
-        One of the registered penalty names (see ``PENALTY_REGISTRY``).
-    m : int
-        Dimension of the penalty argument.
-    **kwargs
-        Penalty-specific parameters (``lam``, ``kappa``, ``tau``, etc.).
-
-    Returns
-    -------
-    PLQ
-        The penalty object (before composition with a linear model).
+    name : registered penalty name.
+    m : dimension.
+    **kwargs : penalty-specific parameters (lam, kappa, tau, ...).
     """
     if name not in PENALTY_REGISTRY:
-        raise ValueError(f"Unknown penalty '{name}'. Choose from: {list(PENALTY_REGISTRY.keys())}")
-
+        raise ValueError(
+            "Unknown penalty '{0}'. Choose from: {1}".format(
+                name, list(PENALTY_REGISTRY.keys())
+            )
+        )
     factory = PENALTY_REGISTRY[name]
-
-    # Map common parameter names
-    import inspect
     sig = inspect.signature(factory)
     valid = set(sig.parameters.keys())
     filtered = {k: v for k, v in kwargs.items() if k in valid}

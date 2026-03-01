@@ -12,7 +12,7 @@ import numpy as np
 import pytest
 import scipy.sparse as sp
 
-from ipsolve import solve
+from ipsolve import solve, l1, l2, huber, hinge, vapnik, qreg, infnorm
 
 # Try importing cvxpy; skip tests if unavailable
 cvxpy = pytest.importorskip("cvxpy")
@@ -60,7 +60,7 @@ class TestHuber:
     def test_basic(self):
         H, z, _ = _make_problem()
         kappa = 1.0
-        x_ip = solve(H, z, meas="huber", meas_kappa=kappa, silent=True)
+        x_ip = solve(H, z, meas=huber(kappa=kappa), silent=True)
 
         x_cv = cvxpy.Variable(H.shape[1])
         # CVXPY huber(x, M) = x² for |x|≤M, 2M|x|−M² for |x|>M
@@ -86,7 +86,7 @@ class TestLasso:
         H, z, _ = _make_problem(m, n)
         lam = 0.5
 
-        x_ip = solve(H, z, meas="l2", proc="l1", proc_lambda=lam, silent=True)
+        x_ip = solve(H, z, proc=l1(lam=lam), silent=True)
 
         x_cv = cvxpy.Variable(n)
         prob = cvxpy.Problem(cvxpy.Minimize(
@@ -109,8 +109,7 @@ class TestHuberL1:
         kappa = 1.0
         lam = 0.3
 
-        x_ip = solve(H, z, meas="huber", proc="l1",
-                      meas_kappa=kappa, proc_lambda=lam, silent=True)
+        x_ip = solve(H, z, meas=huber(kappa=kappa), proc=l1(lam=lam), silent=True)
 
         x_cv = cvxpy.Variable(n)
         prob = cvxpy.Problem(cvxpy.Minimize(
@@ -142,8 +141,7 @@ class TestSVM:
         lam_svm = 0.01
 
         # Hinge penalty: pos(1 - yX @ w)  with L2 regulariser (0.5/mMult)*||w||^2
-        x_ip = solve(yX, np.ones(n_inst), meas="hinge", proc="l2",
-                      meas_lambda=1.0, proc_mMult=1.0 / lam_svm, silent=True)
+        x_ip = solve(yX, np.ones(n_inst), meas=hinge(), proc=l2(lam=lam_svm), silent=True)
 
         x_cv = cvxpy.Variable(n_vars)
         prob = cvxpy.Problem(cvxpy.Minimize(
@@ -164,7 +162,7 @@ class TestSVM:
 class TestL1Fitting:
     def test_basic(self):
         H, z, _ = _make_problem()
-        x_ip = solve(H, z, meas="l1", meas_lambda=1.0, silent=True)
+        x_ip = solve(H, z, meas=l1(), silent=True)
 
         x_cv = cvxpy.Variable(H.shape[1])
         prob = cvxpy.Problem(cvxpy.Minimize(cvxpy.norm1(z - H @ x_cv)))
@@ -183,7 +181,7 @@ class TestQuantileRegression:
         H, z, _ = _make_problem()
         tau = 0.25
 
-        x_ip = solve(H, z, meas="qreg", meas_lambda=1.0, meas_tau=tau, silent=True)
+        x_ip = solve(H, z, meas=qreg(tau=tau), silent=True)
 
         x_cv = cvxpy.Variable(H.shape[1])
         resid = z - H @ x_cv
@@ -210,8 +208,7 @@ class TestL1L1:
         H, z, _ = _make_problem(m, n)
         lam = 0.5
 
-        x_ip = solve(H, z, meas="l1", proc="l1", meas_lambda=1.0,
-                      proc_lambda=lam, silent=True)
+        x_ip = solve(H, z, meas=l1(), proc=l1(lam=lam), silent=True)
 
         x_cv = cvxpy.Variable(n)
         prob = cvxpy.Problem(cvxpy.Minimize(
@@ -233,7 +230,7 @@ class TestVapnik:
         eps = 0.3
         lam = 1.0
 
-        x_ip = solve(H, z, meas="vapnik", meas_lambda=lam, meas_eps=eps, silent=True)
+        x_ip = solve(H, z, meas=vapnik(lam=lam, eps=eps), silent=True)
 
         x_cv = cvxpy.Variable(H.shape[1])
         resid = z - H @ x_cv
@@ -257,11 +254,7 @@ class TestConstrained:
         box = 0.5
         n = H.shape[1]
 
-        # Constraints: -box ≤ x ≤ box  →  [I; -I] x ≤ [box; box]
-        A_ineq = np.vstack([np.eye(n), -np.eye(n)])
-        a_ineq = box * np.ones(2 * n)
-
-        x_ip = solve(H, z, meas="l2", A_ineq=A_ineq, a_ineq=a_ineq, silent=True)
+        x_ip = solve(H, z, bounds=(-box, box), silent=True)
 
         x_cv = cvxpy.Variable(n)
         prob = cvxpy.Problem(
@@ -287,7 +280,7 @@ class TestInfNorm:
         H, z, _ = _make_problem(m=60, n=20)
         lam = np.max(np.abs(H.T @ z)) / 5.0
 
-        x_ip = solve(H, z, meas="l2", proc="infnorm", proc_lambda=lam,
+        x_ip = solve(H, z, proc=infnorm(lam=lam),
                       opt_tol=1e-6, silent=True)
 
         n = H.shape[1]
@@ -340,7 +333,7 @@ class TestKalman:
         w = np.zeros(n * N)
         w[:n] = 10.0 * x_true[:1]
 
-        y_ip = solve(H_mat, z_meas, meas="l2", proc="l2",
+        y_ip = solve(H_mat, z_meas, proc=l2(),
                      K_proc=G_mat, k_proc=w, silent=True)
 
         # CVXPY reference: min 0.5‖z_meas − H y‖² + 0.5‖G y − w‖²

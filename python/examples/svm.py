@@ -11,7 +11,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from ipsolve import solve
+from ipsolve import solve, hinge, l2
 
 
 def main():
@@ -37,10 +37,8 @@ def main():
     print("Solving SVM with IPsolve...")
     w = solve(
         yX, np.ones(n_inst),
-        meas="hinge", proc="l2",
-        meas_lambda=1.0,
-        proc_mMult=1.0 / lam_svm,
-        silent=False,
+        meas=hinge(),
+        proc=l2(lam=lam_svm),
     )
 
     # Test on new data
