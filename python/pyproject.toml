@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ipsolve"
+version = "0.1.0"
+description = "Interior-point solver for piecewise linear-quadratic (PLQ) optimization"
+readme = "README.md"
+license = "EPL-1.0"
+requires-python = ">=3.10"
+authors = [
+    {name = "Aleksandr Y. Aravkin", email = "sasha.aravkin@gmail.com"},
+]
+dependencies = [
+    "numpy>=1.24",
+    "scipy>=1.10",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=7", "cvxpy>=1.4"]
+dev  = ["pytest>=7", "cvxpy>=1.4", "matplotlib>=3.6"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
