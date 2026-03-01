@@ -37,6 +37,7 @@ class SolverResult:
     kkt_history: list = field(default_factory=list)
     mu_final: float = 0.0
     iterations: int = 0
+    cg_iters: int = 0
     converged: bool = False
 
 
@@ -145,6 +146,7 @@ def ip_solve(
         print("=" * 80)
 
     converged = False
+    total_cg = 0
     for itr in range(max_iter):
         # -- KKT residual --
         F = kkt_residual(lin_term, b, B_meas, c, C, M,
@@ -154,6 +156,7 @@ def ip_solve(
         # -- Newton direction --
         sol = kkt_solve(lin_term, b, B_meas, c, C, M,
                         q, u, r, w, y, mu, **solve_kw)
+        total_cg += sol.cg_iters
         dq, du, dr, dw, dy = sol.dq, sol.du, sol.dr, sol.dw, sol.dy
 
         dirs = [dq, du, dy] + ([dr, dw] if has_con else [])
@@ -184,6 +187,7 @@ def ip_solve(
             sol2 = kkt_solve(lin_term, b, B_meas, c, C, M,
                              q_new, u_new, r_new, w_new, y_new,
                              mu_corr, **solve_kw)
+            total_cg += sol2.cg_iters
             d_new = c - C.T @ u_new
             dd2 = -C.T @ sol2.du
             lam2 = _max_step(d_new, q_new, r_new, w_new, dd2, sol2.dq,
@@ -231,5 +235,6 @@ def ip_solve(
     result.r, result.w = r, w
     result.mu_final = mu
     result.iterations = itr + 1
+    result.cg_iters = total_cg
     result.converged = converged
     return result

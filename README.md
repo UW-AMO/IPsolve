@@ -152,18 +152,38 @@ O(N^2) to O(nnz) and scaling better for overdetermined problems (m >> n).
 python benchmarks/scaling_demo.py
 ```
 
-**Lasso (l2 + l1, underdetermined m < n)** -- direct wins (small Omega):
+#### Part 1 — Direct (LU) vs CG comparison
 
-| m | n | Direct (s) | CG (s) | Rel diff |
-|---|---|-----------|--------|----------|
-| 50 | 100 | 0.02 | 0.07 | 6e-8 |
-| 200 | 500 | 0.48 | 0.98 | 7e-8 |
-| 600 | 1500 | 11.6 | 17.0 | 8e-5 |
+**Lasso (ℓ₂ + ℓ₁, underdetermined m < n):**
 
-**Huber (overdetermined m >> n)** -- CG wins (T is large, Omega is small):
+| m | n | Direct (s) | IP | CG | CG (s) | IP | CG | Rel diff |
+|---|---|-----------|---|---|--------|---|---|----------|
+| 100 | 200 | 0.08 | 17 | 0 | 0.22 | 17 | 1960 | 3.4e-8 |
+| 200 | 500 | 0.66 | 20 | 0 | 1.15 | 20 | 4588 | 6.9e-8 |
+| 500 | 1000 | 3.89 | 20 | 0 | 5.26 | 20 | 4499 | 5.1e-5 |
 
-| m | n | Direct (s) | CG (s) | Speedup | Rel diff |
-|---|---|-----------|--------|---------|----------|
-| 100 | 50 | 0.01 | 0.02 | 0.6x | 4e-8 |
-| 500 | 200 | 0.08 | 0.07 | 1.2x | 5e-9 |
-| 2000 | 600 | 2.45 | 0.78 | 3.1x | 4e-10 |
+**Huber regression (overdetermined m ≫ n) — CG wins:**
+
+| m | n | Direct (s) | IP | CG | CG (s) | IP | CG | Speedup | Rel diff |
+|---|---|-----------|---|---|--------|---|---|---------|----------|
+| 500 | 200 | 0.09 | 10 | 0 | 0.08 | 10 | 233 | 1.2× | 4.5e-9 |
+| 1000 | 500 | 1.09 | 13 | 0 | 0.55 | 13 | 413 | 2.0× | 1.7e-9 |
+| 2000 | 1000 | 10.14 | 16 | 0 | 2.84 | 16 | 522 | 3.6× | 5.4e-10 |
+
+#### Part 2 — CG-only scaling (large problems)
+
+**Lasso (CG-only):**
+
+| m | n | Time (s) | IP iters | CG iters | Objective |
+|---|---|---------|---------|---------|-----------|
+| 500 | 1000 | 5.4 | 20 | 4499 | 24.59 |
+| 1000 | 2000 | 29.4 | 23 | 6209 | 45.15 |
+| 2000 | 5000 | 369.5 | 36 | 16221 | 120.27 |
+
+**Huber (CG-only):**
+
+| m | n | Time (s) | IP iters | CG iters |
+|---|---|---------|---------|---------|
+| 2000 | 1000 | 2.5 | 16 | 522 |
+| 5000 | 2000 | 9.0 | 14 | 351 |
+| 10000 | 5000 | 70.6 | 16 | 536 |

@@ -326,9 +326,9 @@ class TestKalman:
         sqrtQinv = np.linalg.inv(np.linalg.cholesky(qk))
         gk = sqrtQinv @ np.array([[1.0, 0.0], [dt, 1.0]])
 
-        # Build block tridiagonal
+        # Build block tridiagonal (lower-bidiagonal)
         from examples.kalman_demo import blktridiag
-        G_mat = blktridiag(sqrtQinv @ np.eye(n), -gk, np.zeros((n, n)), N)
+        G_mat = blktridiag(sqrtQinv @ np.eye(n), -gk, N)
         G_mat[:n, :n] = 10.0 * sp.eye(n)
         w = np.zeros(n * N)
         w[:n] = 10.0 * x_true[:1]
