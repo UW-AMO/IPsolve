@@ -1,14 +1,17 @@
 """
-Interior-point solver – barrier formulation with Mehrotra corrector.
+Interior-point solver -- barrier formulation with Mehrotra corrector.
 
-This is the main IP loop.  It maintains variables ``(u, q, y, r, w)`` and
-drives the barrier parameter μ → 0 while enforcing complementarity and
-stationarity via damped Newton steps.
+Main IP loop maintaining variables (u, q, y, r, w) and driving mu -> 0
+while enforcing complementarity and stationarity via damped Newton steps.
 
-The algorithm follows the structure in:
-
+Based on:
     Aravkin, Burke, Pillonetto.  "Sparse/Robust Estimation and Kalman
     Smoothing with Nonsmooth Log-Concave Densities."  JMLR 14, 2013.
+
+Refactor highlights (v0.2)
+--------------------------
+- Extracted _max_step and _armijo_search for readability.
+- Renamed ip_solve_barrier -> ip_solve, B2 -> B_proc, M2 -> M_proc.
 """
 
 from __future__ import annotations
@@ -19,7 +22,7 @@ from typing import Callable, Optional
 import numpy as np
 import scipy.sparse as sp
 
-from ipsolve.kkt import kkt_residual_barrier, kkt_solve_barrier
+from ipsolve.kkt import kkt_residual, kkt_solve
 
 
 @dataclass
@@ -37,231 +40,196 @@ class SolverResult:
     converged: bool = False
 
 
-def ip_solve_barrier(
-    lin_term: np.ndarray,
-    b: np.ndarray,
-    Bm: sp.spmatrix,
-    c: np.ndarray,
-    C: sp.spmatrix,
-    M,
-    q0: np.ndarray,
-    u0: np.ndarray,
-    r0: Optional[np.ndarray],
-    w0: Optional[np.ndarray],
-    y0: np.ndarray,
-    obj_fun: Optional[Callable] = None,
+# ======================================================================
+# Step-size helpers
+# ======================================================================
+
+def _max_step(d, q, r, w, dd, dq, dr, dw, has_con):
+    """Maximum step via ratio test (keep d, q, r, w > 0).
+
+    Returns lam_max in (0, 1].
+    """
+    if has_con:
+        ratio = np.concatenate([dd, dq, dr, dw]) / np.concatenate([d, q, r, w])
+    else:
+        ratio = np.concatenate([dd, dq]) / np.concatenate([d, q])
+
+    neg = ratio < 0
+    if np.any(neg):
+        return min(0.99 * np.min(-1.0 / ratio[neg]), 1.0)
+    return 1.0
+
+
+def _armijo_search(
+    lin_term, b, B_meas, c, C, M, q, u, r, w, y, mu,
+    dq, du, dr, dw, dy, lam_max, G, kkt_kw,
+    has_con, gamma=0.01, beta=0.1, max_bt=20,
+):
+    """Backtracking Armijo line search on the KKT residual.
+
+    Returns (q, u, r, w, y, G_new, lam, kount) or None on failure.
+    """
+    lam = lam_max / beta          # pre-divide so first trial is lam_max
+
+    for kount in range(1, max_bt + 1):
+        lam *= beta
+        q_t = q + lam * dq
+        u_t = u + lam * du
+        y_t = y + lam * dy
+        r_t = (r + lam * dr) if has_con else None
+        w_t = (w + lam * dw) if has_con else None
+
+        if np.min(q_t) <= 0:
+            continue
+
+        F_t = kkt_residual(
+            lin_term, b, B_meas, c, C, M,
+            q_t, u_t, r_t, w_t, y_t, mu, **kkt_kw,
+        )
+        G_t = np.max(np.abs(F_t))
+        if G_t <= (1 - gamma * lam) * G:
+            return q_t, u_t, r_t, w_t, y_t, G_t, lam, kount
+
+    return None
+
+
+# ======================================================================
+# Main IP loop
+# ======================================================================
+
+def ip_solve(
+    lin_term, b, B_meas, c, C, M,
+    q0, u0, r0, w0, y0,
+    obj_fun=None,
     *,
-    B2: Optional[sp.spmatrix] = None,
-    M2=None,
-    A: Optional[sp.spmatrix] = None,
-    a: Optional[np.ndarray] = None,
-    rho: float = 0.0,
-    delta: float = 0.0,
-    inexact: bool = False,
-    mehrotra: bool = False,
-    opt_tol: float = 1e-5,
-    max_iter: int = 100,
-    silent: bool = False,
-) -> SolverResult:
+    B_proc=None, M_proc=None,
+    A=None, a=None,
+    rho=0.0, delta=0.0,
+    inexact=False, mehrotra=False,
+    opt_tol=1e-5, max_iter=100, silent=False,
+):
     """Run the barrier interior-point solver.
 
     Parameters
     ----------
-    lin_term : (N,) array – linear objective term.
-    b, Bm, c, C, M : PLQ system data (see :mod:`ipsolve.kkt`).
+    lin_term : (N,) -- linear objective term.
+    b, B_meas, c, C, M : PLQ system data (see ipsolve.kkt).
     q0, u0, r0, w0, y0 : initial iterates.
-    obj_fun : callable(y) → float, primal objective (for logging).
-    B2, M2 : process model matrices (if two-block structure).
-    A, a : linear constraints A.T @ y ≤ a.
+    obj_fun : callable(y) -> float, primal objective (for logging).
+    B_proc, M_proc : process model matrices (two-block structure).
+    A, a : linear constraints A'y <= a.
     rho, delta : regularisation parameters.
-    inexact : use PCG instead of direct solves.
-    mehrotra : apply Mehrotra predictor-corrector step.
+    inexact : use CG instead of direct solves.
+    mehrotra : Mehrotra predictor-corrector step.
     opt_tol : optimality tolerance.
     max_iter : iteration limit.
     silent : suppress printing.
-
-    Returns
-    -------
-    SolverResult
     """
-    # Copy initial iterates
-    u = u0.copy()
-    q = q0.copy()
-    y = y0.copy()
+    u, q, y = u0.copy(), q0.copy(), y0.copy()
     r = r0.copy() if r0 is not None else None
     w = w0.copy() if w0 is not None else None
-    pCon = A is not None
+    has_con = A is not None
 
     mu = 1.0
-    gamma_ls = 0.01
     pcg_tol = 1e-5
-
     result = SolverResult(y=y, u=u, q=q, r=r, w=w)
 
+    kkt_kw = dict(B_proc=B_proc, M_proc=M_proc, A=A, a=a)
+    solve_kw = dict(**kkt_kw, rho=rho, delta=delta,
+                    inexact=inexact, pcg_tol=pcg_tol)
+
     if not silent:
-        header = f"{'Iter':>5s}  {'Objective':>13s}  {'KKT Norm':>13s}  {'mu':>13s}  {'Step':>10s}  {'Armijo':>7s}"
         print("=" * 80)
-        print(header)
+        fmt = "{:>5s}  {:>13s}  {:>13s}  {:>13s}  {:>10s}  {:>7s}"
+        print(fmt.format("Iter", "Objective", "KKT Norm", "mu", "Step", "Armijo"))
         print("=" * 80)
 
-    kkt_kwargs = dict(B2=B2, M2=M2, A=A, a=a)
-    solve_kwargs = dict(B2=B2, M2=M2, A=A, a=a, rho=rho, delta=delta,
-                        inexact=inexact, pcg_tol=pcg_tol)
-
+    converged = False
     for itr in range(max_iter):
-        # ------------------------------------------------------------------
-        # KKT residual
-        # ------------------------------------------------------------------
-        F = kkt_residual_barrier(
-            lin_term, b, Bm, c, C, M, q, u, r, w, y, mu, **kkt_kwargs
-        )
+        # -- KKT residual --
+        F = kkt_residual(lin_term, b, B_meas, c, C, M,
+                         q, u, r, w, y, mu, **kkt_kw)
         G = np.max(np.abs(F))
 
-        # ------------------------------------------------------------------
-        # Newton direction
-        # ------------------------------------------------------------------
-        sol = kkt_solve_barrier(
-            lin_term, b, Bm, c, C, M, q, u, r, w, y, mu, **solve_kwargs
-        )
+        # -- Newton direction --
+        sol = kkt_solve(lin_term, b, B_meas, c, C, M,
+                        q, u, r, w, y, mu, **solve_kw)
         dq, du, dr, dw, dy = sol.dq, sol.du, sol.dr, sol.dw, sol.dy
 
-        if np.any(np.isnan(np.concatenate([dq, du, dy] + ([dr, dw] if pCon else [])))):
+        dirs = [dq, du, dy] + ([dr, dw] if has_con else [])
+        if np.any(np.isnan(np.concatenate(dirs))):
             raise RuntimeError("NaNs in Newton direction")
 
-        # ------------------------------------------------------------------
-        # Step-size via ratio test (keep d, q, r, w > 0)
-        # ------------------------------------------------------------------
+        # -- Step-size --
         d = c - C.T @ u
         dd = -C.T @ du
+        lam_max = _max_step(d, q, r, w, dd, dq,
+                            dr if has_con else np.array([]),
+                            dw if has_con else np.array([]),
+                            has_con)
 
-        if pCon:
-            ratio = np.concatenate([dd, dq, dr, dw]) / np.concatenate([d, q, r, w])
-        else:
-            ratio = np.concatenate([dd, dq]) / np.concatenate([d, q])
-
-        neg_mask = ratio < 0
-        if np.any(neg_mask):
-            lam_max = 0.99 * np.min(-1.0 / ratio[neg_mask])
-            lam_max = min(lam_max, 1.0)
-        else:
-            lam_max = 1.0
-
-        # Armijo backtracking
-        lam = lam_max
-        beta = 0.1
-        ok = False
-        kount = 0
-        max_kount = 20
-
-        # Pre-divide so first trial is lam_max
-        lam = lam / beta
-
-        while not ok and kount < max_kount:
-            kount += 1
-            lam *= beta
-
-            q_new = q + lam * dq
-            u_new = u + lam * du
-            y_new = y + lam * dy
-            r_new = (r + lam * dr) if pCon else None
-            w_new = (w + lam * dw) if pCon else None
-
-            if np.min(q_new) <= 0:
-                continue
-
-            F_new = kkt_residual_barrier(
-                lin_term, b, Bm, c, C, M, q_new, u_new, r_new, w_new, y_new, mu,
-                **kkt_kwargs
-            )
-            G_new = np.max(np.abs(F_new))
-            ok = G_new <= (1 - gamma_ls * lam) * G
-
-        if not ok:
+        ls = _armijo_search(
+            lin_term, b, B_meas, c, C, M, q, u, r, w, y, mu,
+            dq, du, dr, dw, dy, lam_max, G, kkt_kw, has_con,
+        )
+        if ls is None:
             if not silent:
-                print("Line search failed – returning best iterate.")
+                print("Line search failed -- returning best iterate.")
             break
+        q_new, u_new, r_new, w_new, y_new, G_new, lam, kount = ls
 
-        # ------------------------------------------------------------------
-        # Mehrotra predictor-corrector
-        # ------------------------------------------------------------------
+        # -- Mehrotra corrector --
         if mehrotra:
-            mu_corr = mu * (1 - lam)
-            if mu_corr < 0:
-                mu_corr = 0.0
-
-            sol2 = kkt_solve_barrier(
-                lin_term, b, Bm, c, C, M, q_new, u_new, r_new, w_new, y_new,
-                mu_corr, **solve_kwargs
-            )
+            mu_corr = max(mu * (1 - lam), 0.0)
+            sol2 = kkt_solve(lin_term, b, B_meas, c, C, M,
+                             q_new, u_new, r_new, w_new, y_new,
+                             mu_corr, **solve_kw)
             d_new = c - C.T @ u_new
             dd2 = -C.T @ sol2.du
-
-            if pCon:
-                ratio2 = (np.concatenate([dd2, sol2.dq, sol2.dr, sol2.dw])
-                          / np.concatenate([d_new, q_new, r_new, w_new]))
-            else:
-                ratio2 = np.concatenate([dd2, sol2.dq]) / np.concatenate([d_new, q_new])
-
-            neg2 = ratio2 < 0
-            if np.any(neg2):
-                lam2 = 0.99 * min(np.min(-1.0 / ratio2[neg2]), 1.0)
-            else:
-                lam2 = 1.0
-
+            lam2 = _max_step(d_new, q_new, r_new, w_new, dd2, sol2.dq,
+                             sol2.dr if has_con else np.array([]),
+                             sol2.dw if has_con else np.array([]),
+                             has_con)
             q_new = q_new + lam2 * sol2.dq
             u_new = u_new + lam2 * sol2.du
             y_new = y_new + lam2 * sol2.dy
-            if pCon:
+            if has_con:
                 r_new = r_new + lam2 * sol2.dr
                 w_new = w_new + lam2 * sol2.dw
-
             if np.min(q_new) <= 0:
                 raise RuntimeError("Negative entries after Mehrotra step")
 
-        # ------------------------------------------------------------------
-        # Update iterates
-        # ------------------------------------------------------------------
-        q, u, y = q_new, u_new, y_new
-        r, w = r_new, w_new
+        # -- Update --
+        q, u, y, r, w = q_new, u_new, y_new, r_new, w_new
 
-        # Log
         obj_val = obj_fun(y) if obj_fun is not None else 0.0
         result.obj_history.append(obj_val)
         result.kkt_history.append(G_new)
 
         if not silent:
-            print(f"{itr:5d}  {obj_val:13.6e}  {G_new:13.6e}  {mu:13.6e}  {lam_max:10.3e}  {kount:7d}")
+            print("{:5d}  {:13.6e}  {:13.6e}  {:13.6e}  {:10.3e}  {:7d}".format(
+                itr, obj_val, G_new, mu, lam_max, kount))
 
-        # ------------------------------------------------------------------
-        # Complementarity gap and mu update
-        # ------------------------------------------------------------------
+        # -- Mu update --
         d = c - C.T @ u
         G1 = np.sum(q * d)
-        if pCon:
+        n_slacks = 2 * len(q)
+        if has_con:
             G1 += np.sum(r * w)
-            num_slacks = 2 * len(q) + 2 * len(r)
-        else:
-            num_slacks = 2 * len(q)
+            n_slacks += 2 * len(r)
+        mu = 0.1 * G1 / n_slacks
 
-        comp_frac = G1 / num_slacks
-        mu = 0.1 * comp_frac
-
-        # ------------------------------------------------------------------
-        # Convergence check
-        # ------------------------------------------------------------------
+        # -- Convergence --
         converged = (G1 < opt_tol) or (G_new < opt_tol)
-
         if converged:
             if not silent:
-                print(f"\nConverged at iteration {itr}. mu={mu:.2e}, KKT={G_new:.2e}")
+                print("\nConverged at iteration {}.  mu={:.2e}, KKT={:.2e}".format(
+                    itr, mu, G_new))
             break
 
-    result.y = y
-    result.u = u
-    result.q = q
-    result.r = r
-    result.w = w
+    result.y, result.u, result.q = y, u, q
+    result.r, result.w = r, w
     result.mu_final = mu
     result.iterations = itr + 1
-    result.converged = converged if 'converged' in dir() else False
+    result.converged = converged
     return result

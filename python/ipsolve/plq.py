@@ -1,21 +1,18 @@
 """
-PLQ dataclass – core representation for piecewise linear-quadratic penalties.
+PLQ dataclass -- core representation for piecewise linear-quadratic penalties.
 
-A PLQ penalty ρ is represented **via its conjugate** in the form used by the
-interior-point solver::
+A PLQ penalty rho is represented **via its conjugate** in the form::
 
-    ρ(v) = max_u  uᵀv − ½ uᵀMu   s.t.  Cᵀu ≤ c
+    rho(v) = max_u  u'v - 0.5 u'Mu   s.t.  C'u <= c
 
-After composing with a linear model v = Bx − b the solver works with:
+After composing with a linear model v = Bx - b the solver works with
+(M, B, C, c, b) where:
 
-    (M, B, C, c, b)
-
-where
-  M : (K, K) matrix or callable  – quadratic term of conjugate
-  B : (K, N) matrix              – linear mapping from x to v
-  C : (K, L) matrix              – constraint normals (stored as K×L, i.e. Cᵀ acts on u)
-  c : (L,)   vector              – constraint RHS
-  b : (K,)   vector              – constant offset (after composing with linear model)
+  M : (K, K) matrix or callable  -- quadratic term of conjugate
+  B : (K, N) matrix              -- linear mapping from x to v
+  C : (K, L) matrix              -- constraint normals (C' acts on u)
+  c : (L,)   vector              -- constraint RHS
+  b : (K,)   vector              -- constant offset
 """
 
 from __future__ import annotations
@@ -26,7 +23,6 @@ from typing import Callable, Optional, Union
 import numpy as np
 import scipy.sparse as sp
 
-# Type alias: M can be a matrix or a function handle returning (grad, Hess)
 MatrixOrCallable = Union[np.ndarray, sp.spmatrix, Callable]
 
 
@@ -37,20 +33,15 @@ class PLQ:
     Attributes
     ----------
     M : matrix or callable
-        If matrix: quadratic part of the conjugate, ½ uᵀMu.
-        If callable: ``grad, Hess = M(u)`` returns gradient and Hessian of
-        the smooth part of the conjugate evaluated at *u*.
-    B : sparse or dense (K, N) matrix
-        Maps decision variable *x* into the penalty argument: v = Bx − b.
-    C : sparse or dense (K, L) matrix
-        Constraint normals for the dual variable *u*.
-        The constraints are  Cᵀu ≤ c  (i.e. C.T @ u ≤ c).
-    c : (L,) array
-        Right-hand side of the dual constraints.
-    b : (K,) array
-        Offset (typically −b − B·z after composition with linear model).
-    obj : callable or None
-        Optional function to evaluate the primal penalty value ρ(v).
+        If matrix: quadratic part of the conjugate, 0.5 u'Mu.
+        If callable: grad, Hess = M(u).
+    B : (K, N) sparse or dense matrix
+        Maps x into penalty argument: v = Bx - b.
+    C : (K, L) sparse or dense matrix
+        Constraint normals: C'u <= c.
+    c : (L,) array -- constraint RHS.
+    b : (K,) array -- offset vector.
+    obj : callable or None -- primal penalty evaluation for logging.
     """
 
     M: MatrixOrCallable
@@ -60,15 +51,10 @@ class PLQ:
     b: np.ndarray
     obj: Optional[Callable] = None
 
-    # ------------------------------------------------------------------
-    # Convenience properties
-    # ------------------------------------------------------------------
     @property
     def K(self) -> int:
         """Dimension of dual variable u."""
-        if sp.issparse(self.B):
-            return self.B.shape[0]
-        return np.atleast_2d(self.B).shape[0]
+        return _nrows(self.B)
 
     @property
     def L(self) -> int:
@@ -77,54 +63,29 @@ class PLQ:
 
     @property
     def is_func(self) -> bool:
-        """True when M is a callable (function handle) rather than a matrix."""
+        """True when M is a callable rather than a matrix."""
         return callable(self.M)
 
-    # ------------------------------------------------------------------
-    # Evaluate the M-part
-    # ------------------------------------------------------------------
     def eval_M(self, u: np.ndarray):
-        """Return (Mu, MM) – gradient and Hessian-like quantities.
-
-        If M is a matrix:  Mu = M @ u,  MM = M.
-        If M is callable:  Mu, MM = M(u).
-        """
+        """Return (Mu, MM) -- gradient and Hessian-like quantities."""
         if self.is_func:
             return self.M(u)
-        else:
-            Mu = self.M @ u
-            return Mu, self.M
+        return self.M @ u, self.M
+
+    def __repr__(self) -> str:
+        kind = "func" if self.is_func else f"{self.K}x{self.K}"
+        return f"PLQ(K={self.K}, L={self.L}, M={kind})"
 
 
-def stack(plq1: PLQ, plq2: PLQ) -> PLQ:
-    """Stack two PLQ penalties (e.g. measurement + process).
+# ------------------------------------------------------------------
+# Utilities
+# ------------------------------------------------------------------
 
-    Returns a combined PLQ where all matrices are block-diagonal / stacked.
-    Note: B matrices are *not* combined here – that is handled by the solver
-    which keeps B_meas and B_proc separate for efficiency.
-    """
-    b_out = np.concatenate([plq1.b, plq2.b])
-    c_out = np.concatenate([plq1.c, plq2.c])
-    C_out = sp.block_diag([plq1.C, plq2.C], format="csc")
-    # B is stacked vertically
-    B_out = sp.vstack([plq1.B, plq2.B], format="csc")
-
-    # M: block-diagonal (only works for matrix M)
-    if plq1.is_func or plq2.is_func:
-        raise ValueError("Cannot stack PLQs with callable M – use the solver's pFlag path.")
-    M_out = sp.block_diag([plq1.M, plq2.M], format="csc")
-
-    def obj_out(v):
-        k1 = plq1.K
-        v1, v2 = v[:k1], v[k1:]
-        val = 0.0
-        if plq1.obj is not None:
-            val += plq1.obj(v1)
-        if plq2.obj is not None:
-            val += plq2.obj(v2)
-        return val
-
-    return PLQ(M=M_out, B=B_out, C=C_out, c=c_out, b=b_out, obj=obj_out)
+def _nrows(X) -> int:
+    """Number of rows for sparse or dense matrix."""
+    if sp.issparse(X):
+        return X.shape[0]
+    return np.atleast_2d(X).shape[0]
 
 
 def ensure_sparse(X):
@@ -132,3 +93,13 @@ def ensure_sparse(X):
     if sp.issparse(X):
         return sp.csc_matrix(X)
     return sp.csc_matrix(np.atleast_2d(X))
+
+
+def compose(plq: PLQ, H, z: np.ndarray) -> PLQ:
+    """Compose PLQ penalty with linear model: v = B(Hx) - (b + Bz).
+
+    Transforms:  b <- -b - Bz;  B <- BH.
+    """
+    B_new = ensure_sparse(plq.B @ H)
+    b_new = -plq.b - plq.B @ z
+    return PLQ(M=plq.M, B=B_new, C=plq.C, c=plq.c, b=b_new, obj=plq.obj)

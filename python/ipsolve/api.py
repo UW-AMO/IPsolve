@@ -4,6 +4,12 @@ High-level interface for solving PLQ problems.
     x = solve(H, z, meas="huber", proc="l1", proc_lambda=0.1)
 
 This is the Python equivalent of the MATLAB ``run_example.m``.
+
+Refactor highlights (v0.2)
+--------------------------
+- compose() imported from plq (was duplicated here as _compose).
+- _PARAM_MAP replaces ad-hoc renaming logic.
+- return_result flag to get the full SolverResult.
 """
 
 from __future__ import annotations
@@ -14,8 +20,20 @@ import numpy as np
 import scipy.sparse as sp
 
 from ipsolve.penalties import load_penalty
-from ipsolve.plq import PLQ, stack, ensure_sparse
-from ipsolve.solver import ip_solve_barrier, SolverResult
+from ipsolve.plq import PLQ, compose, ensure_sparse
+from ipsolve.solver import ip_solve, SolverResult
+
+
+# Map from user-facing kwarg suffix -> penalty factory arg name
+_PARAM_MAP = {
+    "lambda": "lam",
+    "kappa": "kappa",
+    "mMult": "mMult",
+    "tau": "tau",
+    "scale": "scale",
+    "eps": "eps",
+    "alpha": "alpha",
+}
 
 
 def solve(
@@ -43,7 +61,7 @@ def solve(
     # Process linear model
     K_proc: Optional[Union[np.ndarray, sp.spmatrix]] = None,
     k_proc: Optional[np.ndarray] = None,
-    # Linear constraints:  A @ x ≤ a
+    # Linear constraints:  A @ x <= a
     A_ineq: Optional[Union[np.ndarray, sp.spmatrix]] = None,
     a_ineq: Optional[np.ndarray] = None,
     # Solver options
@@ -55,29 +73,29 @@ def solve(
     max_iter: int = 100,
     silent: bool = False,
     u_init: float = 1e-6,
-) -> np.ndarray:
+    return_result: bool = False,
+) -> Union[np.ndarray, SolverResult]:
     """Solve a PLQ composite problem.
 
     Parameters
     ----------
     H : (m, n) matrix or callable
         Linear model (matrix) or nonlinear forward model (callable).
-        If callable: ``residual, Jacobian = H(x)`` where residual is (m,)
-        and Jacobian is (m, n).
     z : (m,) array
         Observed data / measurements.
     meas : str
-        Name of the measurement penalty (e.g. ``'l2'``, ``'huber'``, ``'l1'``).
+        Measurement penalty name (e.g. 'l2', 'huber', 'l1').
     proc : str or None
-        Name of the process / regularisation penalty, or ``None`` for no
-        regularisation.
+        Process / regularisation penalty, or None.
     lin_term : (n,) array or None
-        Optional linear term ℓᵀx in the objective.
+        Optional linear term l'x in the objective.
+    return_result : bool
+        If True return the full SolverResult; otherwise return x only.
 
     Returns
     -------
-    x : (n,) array
-        The optimal solution.
+    x : (n,) array  (default)
+    result : SolverResult  (if return_result=True)
     """
     z = np.asarray(z, dtype=float).ravel()
 
@@ -87,28 +105,33 @@ def solve(
             "Pass a matrix for the linear model."
         )
 
-    return _solve_linear(
-        H, z, meas, proc, lin_term,
-        meas_lambda=meas_lambda, meas_kappa=meas_kappa, meas_mMult=meas_mMult,
-        meas_tau=meas_tau, meas_scale=meas_scale, meas_eps=meas_eps,
+    # Collect all kwargs into a dict for forwarding
+    opts = dict(
+        meas_lambda=meas_lambda, meas_kappa=meas_kappa,
+        meas_mMult=meas_mMult, meas_tau=meas_tau,
+        meas_scale=meas_scale, meas_eps=meas_eps,
         meas_alpha=meas_alpha,
-        proc_lambda=proc_lambda, proc_kappa=proc_kappa, proc_mMult=proc_mMult,
-        proc_tau=proc_tau, proc_scale=proc_scale, proc_eps=proc_eps,
+        proc_lambda=proc_lambda, proc_kappa=proc_kappa,
+        proc_mMult=proc_mMult, proc_tau=proc_tau,
+        proc_scale=proc_scale, proc_eps=proc_eps,
         K_proc=K_proc, k_proc=k_proc,
         A_ineq=A_ineq, a_ineq=a_ineq,
         rho=rho, delta=delta, inexact=inexact, mehrotra=mehrotra,
         opt_tol=opt_tol, max_iter=max_iter, silent=silent, u_init=u_init,
     )
+    result = _solve_linear(H, z, meas, proc, lin_term, **opts)
+
+    if return_result:
+        return result
+    return result.y
 
 
 # ======================================================================
 # Linear (explicit H) path
 # ======================================================================
 
-def _solve_linear(
-    H, z, meas, proc, lin_term, **kwargs
-) -> np.ndarray:
-    """Solve when H is a matrix."""
+def _solve_linear(H, z, meas, proc, lin_term, **kwargs) -> SolverResult:
+    """Solve when H is a matrix.  Returns full SolverResult."""
     H = ensure_sparse(H) if sp.issparse(H) else np.atleast_2d(H)
     m, n = H.shape
     z = z.ravel()
@@ -119,19 +142,17 @@ def _solve_linear(
         lin_term = np.asarray(lin_term, dtype=float).ravel()
 
     # ------------------------------------------------------------------
-    # Build measurement PLQ
+    # Measurement PLQ
     # ------------------------------------------------------------------
-    meas_kw = _filter_penalty_kwargs(meas, kwargs, prefix="meas_")
+    meas_kw = _penalty_kwargs(kwargs, "meas_")
     plq_meas = load_penalty(meas, m, **meas_kw)
-    # Compose with linear model:  b ← −b − B·z;  B ← B·H
-    plq_meas = _compose(plq_meas, H, z)
+    plq_meas = compose(plq_meas, H, z)
 
     # ------------------------------------------------------------------
-    # Build process PLQ  (optional)
+    # Process PLQ  (optional)
     # ------------------------------------------------------------------
-    pFlag = proc is not None
-    if pFlag:
-        # Custom linear operator for regulariser
+    has_proc = proc is not None
+    if has_proc:
         K_mat = kwargs.get("K_proc")
         k_vec = kwargs.get("k_proc")
         if K_mat is not None:
@@ -144,49 +165,50 @@ def _solve_linear(
             k_vec = np.zeros(n)
             p_dim = n
 
-        proc_kw = _filter_penalty_kwargs(proc, kwargs, prefix="proc_")
+        proc_kw = _penalty_kwargs(kwargs, "proc_")
         plq_proc = load_penalty(proc, p_dim, **proc_kw)
-        plq_proc = _compose(plq_proc, K_mat, k_vec)
+        plq_proc = compose(plq_proc, K_mat, k_vec)
 
     # ------------------------------------------------------------------
     # Assemble the full system
     # ------------------------------------------------------------------
-    if pFlag:
-        # Two-block structure: keep Bm and B2 separate for efficiency
+    if has_proc:
         b_full = np.concatenate([plq_meas.b, plq_proc.b])
         c_full = np.concatenate([plq_meas.c, plq_proc.c])
         C_full = sp.block_diag([plq_meas.C, plq_proc.C], format="csc")
 
-        Bm = ensure_sparse(plq_meas.B)
-        B2 = ensure_sparse(plq_proc.B)
+        B_meas = ensure_sparse(plq_meas.B)
+        B_proc = ensure_sparse(plq_proc.B)
         M_meas = plq_meas.M
-        M2 = plq_proc.M
+        M_proc = plq_proc.M
 
-        K_total = Bm.shape[0] + B2.shape[0]
+        K_total = B_meas.shape[0] + B_proc.shape[0]
     else:
         b_full = plq_meas.b
         c_full = plq_meas.c
         C_full = plq_meas.C
-        Bm = ensure_sparse(plq_meas.B)
+        B_meas = ensure_sparse(plq_meas.B)
         M_meas = plq_meas.M
-        B2 = None
-        M2 = None
-        K_total = Bm.shape[0]
+        B_proc = None
+        M_proc = None
+        K_total = B_meas.shape[0]
 
-    C_full = ensure_sparse(C_full.T)  # Store as (K, L) per MATLAB convention: C is K×L
-
+    # Store as (K, L) per convention: C' acts on u
+    C_full = ensure_sparse(C_full.T)
     L = C_full.shape[1]
 
     # ------------------------------------------------------------------
-    # Build objective function for logging
+    # Objective function for logging
     # ------------------------------------------------------------------
     def obj_fun(x):
         val = lin_term @ x
         if plq_meas.obj is not None:
             val += plq_meas.obj(z - H @ x)
-        if pFlag and plq_proc.obj is not None:
-            if kwargs.get("K_proc") is not None:
-                val += plq_proc.obj(kwargs["K_proc"] @ x - kwargs.get("k_proc", np.zeros(kwargs["K_proc"].shape[0])))
+        if has_proc and plq_proc.obj is not None:
+            K_mat_local = kwargs.get("K_proc")
+            if K_mat_local is not None:
+                k_vec_local = kwargs.get("k_proc", np.zeros(K_mat_local.shape[0]))
+                val += plq_proc.obj(K_mat_local @ x - k_vec_local)
             else:
                 val += plq_proc.obj(x)
         return val
@@ -203,8 +225,6 @@ def _solve_linear(
     a_ineq = kwargs.get("a_ineq")
     if A_ineq is not None:
         A_sp = ensure_sparse(A_ineq)
-        P = A_sp.shape[1] if A_sp.shape[0] == n else A_sp.shape[0]
-        # Convention: A is (N, P), A.T @ y ≤ a
         if A_sp.shape[0] != n:
             A_sp = A_sp.T
         r0 = 10.0 * np.ones(A_sp.shape[1])
@@ -218,11 +238,11 @@ def _solve_linear(
     # ------------------------------------------------------------------
     # Solve
     # ------------------------------------------------------------------
-    result = ip_solve_barrier(
-        lin_term, b_full, Bm, c_full, C_full, M_meas,
+    return ip_solve(
+        lin_term, b_full, B_meas, c_full, C_full, M_meas,
         q0, u0, r0, w0, y0,
         obj_fun=obj_fun,
-        B2=B2, M2=M2,
+        B_proc=B_proc, M_proc=M_proc,
         A=A_sp, a=a_ineq,
         rho=kwargs.get("rho", 0.0),
         delta=kwargs.get("delta", 0.0),
@@ -233,50 +253,20 @@ def _solve_linear(
         silent=kwargs.get("silent", False),
     )
 
-    return result.y
-
 
 # ======================================================================
 # Helpers
 # ======================================================================
 
-def _compose(plq: PLQ, H, z: np.ndarray) -> PLQ:
-    """Compose PLQ penalty with linear model: v = B·(Hx) − (b + B·z).
+def _penalty_kwargs(kwargs: dict, prefix: str) -> dict:
+    """Extract penalty-specific kwargs, stripping prefix and renaming.
 
-    Transforms:  b ← −b − B·z;  B ← B·H.
+    E.g. meas_lambda=0.1  ->  lam=0.1.
     """
-    B_new = ensure_sparse(plq.B @ H)
-    b_new = -plq.b - plq.B @ z
-    return PLQ(
-        M=plq.M,
-        B=B_new,
-        C=plq.C,
-        c=plq.c,
-        b=b_new,
-        obj=plq.obj,
-    )
-
-
-def _filter_penalty_kwargs(penalty_name: str, kwargs: dict, prefix: str) -> dict:
-    """Extract penalty-specific kwargs, stripping the prefix.
-
-    E.g. ``meas_lambda=0.1`` → ``lam=0.1`` for the penalty factory.
-    """
-    # Map from our keyword names (with prefix stripped) to penalty factory arg names
-    name_map = {
-        "lambda": "lam",
-        "kappa": "kappa",
-        "mMult": "mMult",
-        "tau": "tau",
-        "scale": "scale",
-        "eps": "eps",
-        "alpha": "alpha",
-    }
-
-    result = {}
+    out = {}
     for k, v in kwargs.items():
         if k.startswith(prefix):
             short = k[len(prefix):]
-            mapped = name_map.get(short, short)
-            result[mapped] = v
-    return result
+            mapped = _PARAM_MAP.get(short, short)
+            out[mapped] = v
+    return out
